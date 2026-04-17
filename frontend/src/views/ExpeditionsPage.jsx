@@ -1,0 +1,916 @@
+import { useReducer, useMemo, useEffect, useState } from "react";
+import NewShipmentModal from "../components/Newshipmentmodal";
+import EditShipmentModal from "../components/Editshipmentmodal";
+import { NavLink } from "react-router-dom";
+import axiosClient from "../axios-client";
+
+// ─── CONFIG ────────────────────────────────────────────────
+
+const STATUS_CONFIG = {
+  draft: { label: "Brouillon", badge: "secondary" },
+  booking: { label: "Réservation", badge: "info" },
+  goods_ready: { label: "Prêt", badge: "info" },
+  in_transit: { label: "En transit", badge: "primary" },
+  at_origin_port: { label: "Port origine", badge: "warning" },
+  on_vessel: { label: "En mer", badge: "primary" },
+  at_dest_port: { label: "Au port", badge: "warning" },
+  customs: { label: "Dédouanement", badge: "warning" },
+  cleared: { label: "Dédouané", badge: "success" },
+  out_for_delivery: { label: "En livraison", badge: "info" },
+  delivered: { label: "Livré", badge: "success" },
+  on_hold: { label: "Bloquée", badge: "danger" },
+  cancelled: { label: "Annulée", badge: "secondary" },
+};
+
+const MODE_CONFIG = {
+  sea: { label: "Maritime", badge: "info", icon: "fa-ship" },
+  air: { label: "Aérien", badge: "primary", icon: "fa-plane" },
+  road: { label: "Routier", badge: "warning", icon: "fa-truck" },
+  multi: { label: "Multimodal", badge: "success", icon: "fa-route" },
+};
+
+const STATUS_PILLS = [
+  { key: "in_transit", label: "En transit" },
+  { key: "on_vessel", label: "En mer" },
+  { key: "at_dest_port", label: "Au port" },
+  { key: "customs", label: "Dédouanement" },
+  { key: "on_hold", label: "Bloquées" },
+  { key: "delivered", label: "Livrées" },
+  { key: "booking", label: "Réservation" },
+  { key: "draft", label: "Brouillons" },
+];
+
+const PAGE_SIZE = 10;
+
+// ─── HELPERS ───────────────────────────────────────────────
+
+const fmt = (val) =>
+  val != null
+    ? Number(val).toLocaleString("fr-FR", { maximumFractionDigits: 0 })
+    : "—";
+
+const fmtDate = (iso) => {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("-");
+  const mo = [
+    "Jan",
+    "Fév",
+    "Mar",
+    "Avr",
+    "Mai",
+    "Juin",
+    "Jul",
+    "Aoû",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Déc",
+  ];
+  return `${d} ${mo[+m - 1]} ${y}`;
+};
+
+const exportCSV = (rows) => {
+  const h = [
+    "Référence",
+    "Description",
+    "Origine",
+    "Destination",
+    "Transitaire",
+    "Mode",
+    "Incoterm",
+    "Statut",
+    "ETA",
+    "Valeur",
+    "Devise",
+    "Créé le",
+  ];
+  const csv = [
+    h,
+    ...rows.map((s) => [
+      s.reference,
+      s.goods_description,
+      `${s.origin_port_or_city} (${s.origin_country})`,
+      `${s.destination_port_or_city} (${s.destination_country})`,
+      s.freight_forwarder_name ?? "",
+      MODE_CONFIG[s.transport_mode]?.label ?? s.transport_mode,
+      s.incoterm,
+      s.status_display,
+      fmtDate(s.estimated_arrival),
+      s.declared_value ?? "",
+      s.currency,
+      fmtDate(s.created_at),
+    ]),
+  ]
+    .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const url = URL.createObjectURL(
+    new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" }),
+  );
+  window.open(url, "_blank");
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+};
+
+// ─── REDUCER ───────────────────────────────────────────────
+
+const init = {
+  // filtres
+  search: "",
+  status: "",
+  mode: "",
+  is_archived: false,
+  dateFrom: "",
+  dateTo: "",
+  ordering: "-created_at",
+  page: 1,
+  // UI
+  showFilters: false,
+  selected: [],
+  selectedShipment: null,
+};
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "FILTER":
+      // tout changement de filtre remet à la page 1
+      return { ...state, [action.key]: action.value, page: 1, selected: [] };
+    case "SORT": {
+      const cur = state.ordering.replace("-", "");
+      const desc = state.ordering.startsWith("-");
+      return {
+        ...state,
+        ordering:
+          cur === action.col
+            ? desc
+              ? action.col
+              : `-${action.col}`
+            : `-${action.col}`,
+        page: 1,
+      };
+    }
+    case "PAGE":
+      return { ...state, page: action.page };
+    case "TOGGLE_FILTERS":
+      return { ...state, showFilters: !state.showFilters };
+    case "TOGGLE_ONE": {
+      const has = state.selected.includes(action.id);
+      return {
+        ...state,
+        selected: has
+          ? state.selected.filter((x) => x !== action.id)
+          : [...state.selected, action.id],
+      };
+    }
+    case "TOGGLE_ALL":
+      return { ...state, selected: action.ids };
+    case "CLEAR_SELECTION":
+      return { ...state, selected: [] };
+    case "RESET":
+      return { ...init, showFilters: state.showFilters };
+    case "SET_EDIT":
+      return { ...state, selectedShipment: action.shipment };
+    case "CLEAR_EDIT":
+      return { ...state, selectedShipment: null };
+    default:
+      return state;
+  }
+};
+
+// ─── SOUS-COMPOSANTS ───────────────────────────────────────
+
+const StatusBadge = ({ status, display }) => {
+  const c = STATUS_CONFIG[status] ?? { badge: "secondary", label: status };
+  return (
+    <span className={`badge badge-phoenix badge-phoenix-${c.badge} fs-10`}>
+      {display ?? c.label}
+    </span>
+  );
+};
+
+const ModeBadge = ({ mode, display }) => {
+  const c = MODE_CONFIG[mode] ?? {
+    badge: "secondary",
+    icon: "fa-box",
+    label: mode,
+  };
+  return (
+    <span className={`badge badge-phoenix badge-phoenix-${c.badge} fs-10`}>
+      <span className={`fas ${c.icon} me-1`} />
+      {display ?? c.label}
+    </span>
+  );
+};
+
+const SortTh = ({ col, label, ordering, onSort, className = "" }) => (
+  <th
+    className={`align-middle white-space-nowrap ${className}`}
+    style={{ cursor: col ? "pointer" : "default", minWidth: 100 }}
+    onClick={col ? () => onSort(col) : undefined}
+  >
+    {label}
+    {col &&
+      (ordering.replace("-", "") === col ? (
+        <span
+          className={`fas ${ordering.startsWith("-") ? "fa-sort-down" : "fa-sort-up"} ms-1 text-primary`}
+        />
+      ) : (
+        <span className="fas fa-sort ms-1 text-body-quaternary" />
+      ))}
+  </th>
+);
+
+const SkeletonRow = () => (
+  <tr>
+    {Array.from({ length: 10 }).map((_, i) => (
+      <td key={i} className="py-3">
+        <div
+          className="bg-body-secondary rounded placeholder-wave"
+          style={{
+            height: 13,
+            width: [30, 110, 170, 150, 130, 65, 55, 90, 80, 110][i],
+            opacity: 0.45,
+          }}
+        />
+      </td>
+    ))}
+  </tr>
+);
+
+// ─── COMPOSANT ─────────────────────────────────────────────
+
+export default function ExpeditionsPage() {
+  const [state, dispatch] = useReducer(reducer, init);
+  const {
+    search,
+    status,
+    mode,
+    is_archived,
+    dateFrom,
+    dateTo,
+    ordering,
+    page,
+    showFilters,
+    selected,
+    selectedShipment,
+  } = state;
+
+  const [shipments, setShipments] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // ── Fetch déclenché par TOUS les paramètres ─────────────
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = () => {
+      setLoading(true);
+      setError(null);
+
+      const params = { ordering };
+      if (search) params.search = search;
+      if (status) params.status = status;
+      if (mode) params.transport_mode = mode;
+      if (is_archived) params.is_archived = true;
+      if (dateFrom) params.estimated_arrival_after = dateFrom;
+      if (dateTo) params.estimated_arrival_before = dateTo;
+
+      axiosClient
+        .get("/shipments/", { params })
+        .then(({ data }) => {
+          if (!cancelled) {
+            setShipments(data.results);
+            setTotal(data.count);
+          }
+        })
+        .catch((err) => {
+          if (!cancelled)
+            setError(err.response?.data?.detail ?? "Erreur de chargement.");
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    };
+
+    // debounce uniquement sur la saisie texte
+    if (search) {
+      const t = setTimeout(run, 350);
+      return () => {
+        cancelled = true;
+        clearTimeout(t);
+      };
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [search, status, mode, is_archived, dateFrom, dateTo, ordering]);
+
+  const totalPages = Math.max(1, Math.ceil(shipments.length / PAGE_SIZE));
+  const pagedShipments = shipments.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE,
+  );
+
+  // ── Compteurs pills (sur la page courante) ───────────────
+  const counts = useMemo(() => {
+    const c = {};
+    shipments.forEach((s) => {
+      c[s.status] = (c[s.status] ?? 0) + 1;
+    });
+    return c;
+  }, [shipments]);
+
+  const hasFilters = search || status || mode || dateFrom || dateTo;
+  const allSelected =
+    pagedShipments.length > 0 &&
+    pagedShipments.every((s) => selected.includes(s.id));
+  const selectedRows = shipments.filter((s) => selected.includes(s.id));
+
+  // pages de pagination visibles
+  const pageNums = useMemo(() => {
+    const nums = [],
+      w = 5;
+    let s = Math.max(1, page - 2),
+      e = Math.min(totalPages, s + w - 1);
+    if (e - s < w - 1) s = Math.max(1, e - w + 1);
+    for (let i = s; i <= e; i++) nums.push(i);
+    return nums;
+  }, [page, totalPages]);
+
+  const f = (key, value) => dispatch({ type: "FILTER", key, value });
+
+  // Archivage
+  const archive = (id) =>
+    axiosClient
+      .post(`/shipments/${id}/archive/`, { archive: true })
+      .then(() => setShipments((prev) => prev.filter((s) => s.id !== id)));
+
+  // Callbacks modals
+  const onUpdated = (updated) => {
+    setShipments((prev) =>
+      prev.map((s) => (s.id === updated.id ? updated : s)),
+    );
+    dispatch({ type: "CLEAR_EDIT" });
+  };
+  const onCreated = (created) => {
+    setShipments((prev) => [created, ...prev]);
+    setTotal((n) => n + 1);
+  };
+
+  return (
+    <>
+      <div className="pb-6">
+        {/* EN-TÊTE */}
+        <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+          <div>
+            <h2 className="mb-1">Expéditions</h2>
+            <p className="text-body-tertiary mb-0 fs-9">
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" />
+                  Chargement…
+                </>
+              ) : (
+                <>
+                  {total} dossier{total !== 1 ? "s" : ""}
+                </>
+              )}
+              {hasFilters && (
+                <button
+                  className="btn btn-link p-0 ms-2 fs-9 text-danger"
+                  onClick={() => dispatch({ type: "RESET" })}
+                >
+                  Réinitialiser les filtres
+                </button>
+              )}
+            </p>
+          </div>
+          <div className="d-flex gap-2">
+            <button
+              className={`btn btn-sm ${is_archived ? "btn-warning" : "btn-phoenix-secondary"}`}
+              onClick={() => f("is_archived", !is_archived)}
+            >
+              <span className="fas fa-archive me-2" />
+              {is_archived ? "Voir actives" : "Archives"}
+            </button>
+            <button
+              className="btn btn-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#newShipmentModal"
+            >
+              <span className="fas fa-plus me-2" />
+              Nouvelle expédition
+            </button>
+          </div>
+        </div>
+
+        {/* ERREUR */}
+        {error && (
+          <div className="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 fs-9">
+            <span className="fas fa-exclamation-circle flex-shrink-0" />
+            {error}
+          </div>
+        )}
+
+        {/* PILLS STATUTS */}
+        <div className="d-flex flex-wrap gap-2 mb-4">
+          <button
+            className={`btn btn-sm ${!status ? "btn-primary" : "btn-phoenix-secondary"}`}
+            onClick={() => f("status", "")}
+          >
+            Tous{" "}
+            <span className="ms-2 badge bg-body-secondary text-body fw-bold">
+              {total}
+            </span>
+          </button>
+          {STATUS_PILLS.map(({ key, label }) =>
+            counts[key] > 0 ? (
+              <button
+                key={key}
+                className={`btn btn-sm ${status === key ? `btn-phoenix-${STATUS_CONFIG[key].badge}` : "btn-phoenix-secondary"}`}
+                onClick={() => f("status", status === key ? "" : key)}
+              >
+                {label}
+                <span
+                  className={`ms-2 badge badge-phoenix badge-phoenix-${STATUS_CONFIG[key].badge}`}
+                >
+                  {counts[key]}
+                </span>
+              </button>
+            ) : null,
+          )}
+        </div>
+
+        {/* BARRE D'OUTILS */}
+        <div className="d-flex flex-wrap gap-2 mb-3 align-items-center">
+          <div className="search-box flex-grow-1" style={{ maxWidth: 420 }}>
+            <div className="position-relative">
+              <input
+                className="form-control search-input form-control-sm"
+                type="search"
+                placeholder="Référence, marchandise, partenaire, ville…"
+                value={search}
+                onChange={(e) => f("search", e.target.value)}
+              />
+              <span className="fas fa-search search-box-icon" />
+            </div>
+          </div>
+          <button
+            className={`btn btn-sm ${showFilters ? "btn-phoenix-primary" : "btn-phoenix-secondary"}`}
+            onClick={() => dispatch({ type: "TOGGLE_FILTERS" })}
+          >
+            <span className="fas fa-sliders-h me-2" />
+            Filtres
+            {hasFilters && (
+              <span className="ms-2 badge badge-phoenix badge-phoenix-danger">
+                !
+              </span>
+            )}
+          </button>
+          {selected.length > 0 ? (
+            <div className="d-flex align-items-center gap-2 ms-auto">
+              <span className="fs-9 text-body-tertiary">
+                {selected.length} sélectionné{selected.length > 1 ? "s" : ""}
+              </span>
+              <button
+                className="btn btn-sm btn-phoenix-secondary"
+                onClick={() => exportCSV(selectedRows)}
+              >
+                <span className="fas fa-download me-1" />
+                Exporter
+              </button>
+              <button
+                className="btn btn-sm btn-phoenix-danger"
+                onClick={() => dispatch({ type: "CLEAR_SELECTION" })}
+              >
+                Désélectionner
+              </button>
+            </div>
+          ) : (
+            <div className="ms-auto d-flex gap-2">
+              <button
+                className="btn btn-sm btn-phoenix-secondary"
+                onClick={() => exportCSV(shipments)}
+              >
+                <span className="fas fa-file-csv me-2" />
+                CSV
+              </button>
+              <button
+                className="btn btn-sm btn-phoenix-secondary"
+                onClick={() => window.print()}
+              >
+                <span className="fas fa-file-pdf me-2" />
+                PDF
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* FILTRES AVANCÉS */}
+        {showFilters && (
+          <div className="card mb-3">
+            <div className="card-body py-3">
+              <div className="row g-3 align-items-end">
+                <div className="col-12 col-sm-6 col-lg-3">
+                  <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
+                    STATUT
+                  </label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={status}
+                    onChange={(e) => f("status", e.target.value)}
+                  >
+                    <option value="">Tous les statuts</option>
+                    {Object.entries(STATUS_CONFIG).map(([v, { label }]) => (
+                      <option key={v} value={v}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-12 col-sm-6 col-lg-2">
+                  <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
+                    MODE
+                  </label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={mode}
+                    onChange={(e) => f("mode", e.target.value)}
+                  >
+                    <option value="">Tous les modes</option>
+                    {Object.entries(MODE_CONFIG).map(([v, { label }]) => (
+                      <option key={v} value={v}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="col-12 col-sm-6 col-lg-2">
+                  <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
+                    ETA DU
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={dateFrom}
+                    onChange={(e) => f("dateFrom", e.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-sm-6 col-lg-2">
+                  <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
+                    AU
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={dateTo}
+                    onChange={(e) => f("dateTo", e.target.value)}
+                  />
+                </div>
+                <div className="col-auto">
+                  <button
+                    className="btn btn-sm btn-phoenix-secondary"
+                    onClick={() => dispatch({ type: "RESET" })}
+                  >
+                    <span className="fas fa-times me-1" />
+                    Réinitialiser
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TABLEAU */}
+        <div className="card">
+          <div className="card-body p-0">
+            <div className="table-responsive scrollbar">
+              <table className="table table-hover fs-9 mb-0 border-top border-translucent">
+                <thead>
+                  <tr>
+                    <th className="ps-3 align-middle" style={{ width: 40 }}>
+                      <div className="form-check mb-0 fs-8">
+                        <input
+                          className="form-check-input"
+                          type="checkbox"
+                          checked={allSelected}
+                          disabled={loading}
+                          onChange={() =>
+                            dispatch({
+                              type: "TOGGLE_ALL",
+                              ids: allSelected
+                                ? []
+                                : pagedShipments.map((s) => s.id),
+                            })
+                          }
+                        />
+                      </div>
+                    </th>
+                    <SortTh
+                      col="reference"
+                      label="RÉFÉRENCE"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col="goods_description"
+                      label="MARCHANDISE"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col={null}
+                      label="ROUTE"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col={null}
+                      label="TRANSITAIRE"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col="transport_mode"
+                      label="MODE"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col={null}
+                      label="INCOT."
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col="status"
+                      label="STATUT"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col="estimated_arrival"
+                      label="ETA"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                    />
+                    <SortTh
+                      col="declared_value"
+                      label="VALEUR (FCFA)"
+                      ordering={ordering}
+                      onSort={(c) => dispatch({ type: "SORT", col: c })}
+                      className="text-end pe-3"
+                    />
+                    <th style={{ width: 48 }} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <SkeletonRow key={i} />
+                    ))
+                  ) : pagedShipments.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={11}
+                        className="text-center py-7 text-body-tertiary"
+                      >
+                        <span className="fas fa-inbox fs-5 d-block mb-2 opacity-50" />
+                        {hasFilters
+                          ? "Aucun résultat pour ces critères."
+                          : "Aucune expédition pour le moment."}
+                      </td>
+                    </tr>
+                  ) : (
+                    pagedShipments.map((s) => (
+                      <tr
+                        key={s.id}
+                        className={`hover-actions-trigger btn-reveal-trigger position-static${selected.includes(s.id) ? " table-active" : ""}`}
+                      >
+                        <td className="ps-3 align-middle">
+                          <div className="form-check mb-0 fs-8">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              checked={selected.includes(s.id)}
+                              onChange={() =>
+                                dispatch({ type: "TOGGLE_ONE", id: s.id })
+                              }
+                            />
+                          </div>
+                        </td>
+                        <td className="align-middle white-space-nowrap">
+                          <NavLink
+                            className="fw-bold text-primary"
+                            to={`/expeditions/${s.id}`}
+                          >
+                            {s.reference}
+                          </NavLink>
+                          <p className="mb-0 fs-10 text-body-tertiary">
+                            {fmtDate(s.created_at)}
+                          </p>
+                        </td>
+                        <td className="align-middle">
+                          <p
+                            className="mb-0 fw-semibold text-body-highlight text-truncate"
+                            style={{ maxWidth: 190 }}
+                          >
+                            {s.goods_description}
+                          </p>
+                          <p className="mb-0 fs-10 text-body-tertiary">
+                            {s.direction_display}
+                          </p>
+                        </td>
+                        <td className="align-middle">
+                          <div className="d-flex flex-column gap-1">
+                            <span className="fs-10 text-body-tertiary">
+                              <span className="fas fa-circle-dot me-1 opacity-50" />
+                              {s.origin_port_or_city}
+                              <span className="ms-1 badge bg-body-secondary text-body fw-normal">
+                                {s.origin_country}
+                              </span>
+                            </span>
+                            <span className="fs-10 fw-semibold">
+                              <span className="fas fa-map-marker-alt me-1 text-primary" />
+                              {s.destination_port_or_city}
+                              <span className="ms-1 badge bg-body-secondary text-body fw-normal">
+                                {s.destination_country}
+                              </span>
+                            </span>
+                          </div>
+                        </td>
+                        <td className="align-middle white-space-nowrap">
+                          {s.freight_forwarder_name ? (
+                            <div className="d-flex align-items-center gap-2">
+                              <div className="avatar avatar-m flex-shrink-0">
+                                <div className="avatar-name rounded-circle bg-primary-subtle">
+                                  <span className="text-primary fw-bold fs-10">
+                                    {s.freight_forwarder_name
+                                      .substring(0, 2)
+                                      .toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="fs-9 fw-semibold">
+                                {s.freight_forwarder_name}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-body-quaternary">—</span>
+                          )}
+                        </td>
+                        <td className="align-middle">
+                          <ModeBadge
+                            mode={s.transport_mode}
+                            display={s.transport_mode_display}
+                          />
+                        </td>
+                        <td className="align-middle">
+                          <span className="badge bg-body-secondary text-body fw-bold fs-10">
+                            {s.incoterm || "—"}
+                          </span>
+                        </td>
+                        <td className="align-middle">
+                          <StatusBadge
+                            status={s.status}
+                            display={s.status_display}
+                          />
+                        </td>
+                        <td className="align-middle white-space-nowrap">
+                          <span
+                            className={`fs-9 fw-semibold ${s.status === "on_hold" ? "text-danger" : ""}`}
+                          >
+                            {fmtDate(s.estimated_arrival)}
+                          </span>
+                        </td>
+                        <td className="align-middle text-end pe-3 white-space-nowrap">
+                          <span className="fs-9 fw-semibold">
+                            {fmt(s.declared_value)}
+                          </span>
+                          <span className="fs-10 text-body-tertiary ms-1">
+                            {s.currency}
+                          </span>
+                        </td>
+                        <td className="align-middle pe-3">
+                          <button
+                            className="btn btn-sm dropdown-toggle dropdown-caret-none btn-reveal"
+                            type="button"
+                            data-bs-toggle="dropdown"
+                          >
+                            <span className="fas fa-ellipsis-h" />
+                          </button>
+                          <div className="dropdown-menu dropdown-menu-end py-2">
+                            <NavLink
+                              className="dropdown-item"
+                              to={`/expeditions/${s.id}`}
+                            >
+                              <span className="fas fa-eye me-2 text-body-tertiary" />
+                              Voir le dossier
+                            </NavLink>
+                            <button
+                              className="dropdown-item w-100 text-start border-0 bg-transparent"
+                              onClick={() =>
+                                dispatch({ type: "SET_EDIT", shipment: s })
+                              }
+                            >
+                              <span className="fas fa-edit me-2 text-body-tertiary" />
+                              Modifier
+                            </button>
+                            <NavLink
+                              className="dropdown-item"
+                              to={`/documents?shipment=${s.id}`}
+                            >
+                              <span className="fas fa-file-alt me-2 text-body-tertiary" />
+                              Documents
+                            </NavLink>
+                            <NavLink
+                              className="dropdown-item"
+                              to={`/tracking/carte?shipment=${s.id}`}
+                            >
+                              <span className="fas fa-map-marker-alt me-2 text-body-tertiary" />
+                              Sur la carte
+                            </NavLink>
+                            {!s.is_archived && (
+                              <>
+                                <div className="dropdown-divider" />
+                                <button
+                                  className="dropdown-item text-danger w-100 text-start border-0 bg-transparent"
+                                  onClick={() => archive(s.id)}
+                                >
+                                  <span className="fas fa-archive me-2" />
+                                  Archiver
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* PAGINATION */}
+          {!loading && total > PAGE_SIZE && (
+            <div className="card-footer d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
+              <p className="mb-0 fs-9 text-body-tertiary">
+                Affichage de <strong>{(page - 1) * PAGE_SIZE + 1}</strong> à{" "}
+                <strong>{Math.min(page * PAGE_SIZE, total)}</strong> sur{" "}
+                <strong>{total}</strong> dossiers
+              </p>
+              <div className="d-flex align-items-center gap-1">
+                <button
+                  className="btn btn-sm btn-phoenix-secondary"
+                  disabled={page === 1}
+                  onClick={() => dispatch({ type: "PAGE", page: 1 })}
+                >
+                  <span className="fas fa-angle-double-left" />
+                </button>
+                <button
+                  className="btn btn-sm btn-phoenix-secondary"
+                  disabled={page === 1}
+                  onClick={() => dispatch({ type: "PAGE", page: page - 1 })}
+                >
+                  <span className="fas fa-chevron-left" />
+                </button>
+                {pageNums.map((n) => (
+                  <button
+                    key={n}
+                    className={`btn btn-sm ${n === page ? "btn-primary" : "btn-phoenix-secondary"}`}
+                    onClick={() => dispatch({ type: "PAGE", page: n })}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button
+                  className="btn btn-sm btn-phoenix-secondary"
+                  disabled={page === totalPages}
+                  onClick={() => dispatch({ type: "PAGE", page: page + 1 })}
+                >
+                  <span className="fas fa-chevron-right" />
+                </button>
+                <button
+                  className="btn btn-sm btn-phoenix-secondary"
+                  disabled={page === totalPages}
+                  onClick={() => dispatch({ type: "PAGE", page: totalPages })}
+                >
+                  <span className="fas fa-angle-double-right" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <EditShipmentModal
+        shipment={selectedShipment}
+        onUpdated={onUpdated}
+        onClose={() => dispatch({ type: "CLEAR_EDIT" })}
+      />
+      <NewShipmentModal onCreated={onCreated} />
+    </>
+  );
+}

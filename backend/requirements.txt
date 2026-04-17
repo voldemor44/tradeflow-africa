@@ -1,0 +1,46 @@
+# ============================================================
+# TradeFlow Africa — requirements.txt
+# Python 3.11+ / Django 5.x
+# ============================================================
+
+# ── Core ────────────────────────────────────────────────────
+Django==5.1.4
+djangorestframework==3.15.2
+
+# ── Authentification JWT ────────────────────────────────────
+# Fournit : access token, refresh token, blacklist (logout)
+djangorestframework-simplejwt==5.3.1
+
+# ── Base de données ─────────────────────────────────────────
+psycopg2-binary==2.9.9          # Driver PostgreSQL
+
+# ── Stockage fichiers (S3 / Cloudflare R2) ──────────────────
+django-storages==1.14.4         # Backend S3
+boto3==1.35.0                   # Client AWS S3 / R2
+
+# ── CORS (frontend React sur un autre domaine) ───────────────
+django-cors-headers==4.4.0
+
+# ── Filtrage & recherche ─────────────────────────────────────
+django-filter==24.3             # ?status=in_transit&mode=sea
+
+# ── Variables d'environnement ────────────────────────────────
+python-decouple==3.8            # Lit .env proprement
+
+# ── Tâches asynchrones (tracking, notifications) ─────────────
+celery==5.4.0
+django-celery-beat==2.7.0       # Tâches périodiques (crontab)
+redis==5.0.8                    # Broker Celery + cache Django
+
+# ── Génération de slugs ──────────────────────────────────────
+# Déjà inclus dans Django (django.utils.text.slugify)
+
+# ── Images (avatar, logo) ────────────────────────────────────
+Pillow==10.4.0
+
+# ── Documentation API automatique ────────────────────────────
+drf-spectacular==0.27.2         # Génère OpenAPI 3 + Swagger UI
+
+# ── Utilitaires dev ──────────────────────────────────────────
+django-extensions==3.2.3        # shell_plus, show_urls, etc.
+ipython==8.27.0                 # Shell interactif enrichi

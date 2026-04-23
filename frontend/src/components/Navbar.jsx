@@ -599,7 +599,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
             <NotificationsDropdown alerts={alerts} />
 
             {/* Raccourci : Nouvelle expédition */}
-            <li className="nav-item d-none d-sm-flex align-items-center">
+            {/* <li className="nav-item d-none d-sm-flex align-items-center">
               <NavLink
                 className="nav-link d-flex align-items-center"
                 to="/expeditions/nouvelle"
@@ -609,7 +609,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
               >
                 <span data-feather="plus-circle" className="icon-sm" />
               </NavLink>
-            </li>
+            </li> */}
 
             {/* Profil utilisateur */}
             <UserDropdown user={user} />

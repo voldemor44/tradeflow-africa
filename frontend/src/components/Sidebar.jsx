@@ -179,16 +179,12 @@ const Sidebar = ({ alerts = {} }) => {
 
             {/* Expéditions */}
             <li className="nav-item">
-              <NavGroup
-                id="expeditions"
+              <NavSingleItem
+                to="/expeditions"
                 icon="package"
                 label="Expéditions"
-                activePaths={["/expeditions"]}
                 alertCount={alerts.shipmentsBlocked}
-              >
-                <NavSubItem to="/expeditions" label="Toutes les expéditions" />
-                <NavSubItem to="/expeditions/archivees" label="Archivées" />
-              </NavGroup>
+              />
             </li>
 
             {/* Carte & Tracking */}

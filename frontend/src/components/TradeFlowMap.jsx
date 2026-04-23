@@ -176,7 +176,6 @@ const TradeFlowMap = ({
   const mapRef = useRef(null);
   const markersRef = useRef({}); // { [shipment.id]: { marker, el } }
   const popupRef = useRef(null);
-  
 
   // ── Initialisation de la carte ──────────────────────────
   useEffect(() => {
@@ -251,10 +250,17 @@ const TradeFlowMap = ({
 
       // Supprime les anciennes couches de route
       shipments.forEach((s) => {
-        [`route-${s.id}`, `route-line-${s.id}`].forEach((id) => {
-          if (map.getLayer(id)) map.removeLayer(id);
-          if (map.getSource(id)) map.removeSource(id);
-        });
+        const sourceId = `route-${s.id}`;
+        const layerId = `route-line-${s.id}`;
+
+        // Toujours supprimer le layer AVANT la source
+        if (map.getLayer(layerId)) {
+          map.removeLayer(layerId);
+        }
+
+        if (map.getSource(sourceId)) {
+          map.removeSource(sourceId);
+        }
       });
 
       shipments.forEach((s) => {

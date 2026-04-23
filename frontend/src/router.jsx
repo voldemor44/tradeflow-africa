@@ -7,6 +7,8 @@ import DefaultLayout from "./layouts/DefaultLayout";
 import GuestLayout from "./layouts/GuestLayout";
 import DashboardLayout from "./layouts/DashboardLayout";
 import Login from "./views/auth/Login";
+import TravelAgencyDash from "./views/TravelAgencyDash";
+import TrackingMapPage from "./views/TrackingMapPage";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +35,10 @@ const router = createBrowserRouter([
           {
             path: "/expeditions",
             element: <ExpeditionsPage />,
+          },
+          {
+            path: "/tracking/carte",
+            element: <TrackingMapPage />,
           },
         ],
       },

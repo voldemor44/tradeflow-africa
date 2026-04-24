@@ -215,15 +215,22 @@ const ShipmentListItem = ({ s, selected, onClick }) => {
 
   return (
     <div
-      className={`p-3 border-bottom cursor-pointer transition-bg ${selected ? "bg-primary-subtle" : "hover-bg-body-tertiary"}`}
-      style={{ cursor: "pointer" }}
+      className={`p-3 border-bottom ${selected ? "bg-primary-subtle" : ""}`}
+      style={{ cursor: "pointer", transition: "background .15s" }}
       onClick={onClick}
+      onMouseEnter={(e) => {
+        if (!selected)
+          e.currentTarget.style.background = "var(--phoenix-body-tertiary-bg)";
+      }}
+      onMouseLeave={(e) => {
+        if (!selected) e.currentTarget.style.background = "";
+      }}
     >
-      <div className="d-flex align-items-start justify-content-between gap-2 mb-1">
+      {/* Ligne 1 — référence + badge statut */}
+      <div className="d-flex align-items-center justify-content-between gap-2 mb-1">
         <div className="d-flex align-items-center gap-2 min-w-0">
           <span
             className={`fas ${mode.icon} text-${mode.badge} flex-shrink-0`}
-            style={{ fontSize: 13 }}
           />
           <NavLink
             className="fw-bold text-primary fs-9 text-truncate"
@@ -234,32 +241,53 @@ const ShipmentListItem = ({ s, selected, onClick }) => {
           </NavLink>
         </div>
         <span
-          className={`badge badge-phoenix badge-phoenix-${st.badge} fs-11 flex-shrink-0`}
+          className={`badge badge-phoenix badge-phoenix-${st.badge} flex-shrink-0`}
         >
           {st.label}
         </span>
       </div>
-      <p className="mb-1 fs-10 text-body-tertiary text-truncate">
+
+      {/* Ligne 2 — description */}
+      <p className="mb-2 fs-9 text-body-tertiary text-truncate">
         {s.goods_description}
       </p>
-      <div className="d-flex align-items-center justify-content-between">
-        <span className="fs-10 text-body-tertiary">
-          <span className="fas fa-circle-dot me-1 opacity-50" />
+
+      {/* Ligne 3 — route */}
+      <div className="d-flex align-items-center gap-1 mb-2 fs-9">
+        <span className="text-body-quaternary">
+          <span className="fas fa-circle-dot me-1" style={{ fontSize: 9 }} />
           {s.origin_port_or_city}
-          <span className="fas fa-arrow-right mx-1 opacity-50" />
-          <strong className="text-body">{s.destination_port_or_city}</strong>
         </span>
-        {pos && (
-          <span className="fs-11 text-body-tertiary">{pos.progress}%</span>
-        )}
+        <span
+          className="fas fa-arrow-right text-body-quaternary"
+          style={{ fontSize: 9 }}
+        />
+        <span className="fw-semibold text-body">
+          {s.destination_port_or_city}
+        </span>
       </div>
+
+      {/* Barre de progression + % */}
       {pos && (
-        <div className="progress mt-2" style={{ height: 3 }}>
-          <div
-            className={`progress-bar bg-${isBlocked ? "danger" : mode.badge}`}
-            style={{ width: `${pos.progress}%` }}
-          />
-        </div>
+        <>
+          <div className="d-flex justify-content-between mb-1">
+            <span className="fs-10 text-body-tertiary">Progression</span>
+            <span
+              className={`fs-10 fw-semibold ${isBlocked ? "text-danger" : "text-body"}`}
+            >
+              {pos.progress}%
+            </span>
+          </div>
+          <div className="progress" style={{ height: 5 }}>
+            <div
+              className={`progress-bar bg-${isBlocked ? "danger" : mode.badge}`}
+              style={{
+                width: `${pos.progress}%`,
+                transition: "width .4s ease",
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
@@ -743,24 +771,24 @@ export default function TrackingMapPage() {
               className="col-12 col-lg-4 col-xl-3 border-end d-flex flex-column"
               style={{ maxHeight: 580 }}
             >
-              {/* Filtres */}
+              {/* ── Filtres ── */}
               <div className="p-3 border-bottom">
-                <div className="position-relative mb-2">
+                {/* Champ de recherche — search-box Phoenix */}
+                <div className="search-box mb-3">
                   <input
-                    className="form-control form-control-sm search-input"
+                    className="form-control search-input"
                     type="search"
                     placeholder="Référence, marchandise…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
-                  <span
-                    className="fas fa-search search-box-icon"
-                    style={{ top: "50%", transform: "translateY(-50%)" }}
-                  />
+                  <span className="fas fa-search search-box-icon" />
                 </div>
-                <div className="d-flex gap-1 flex-wrap">
+
+                {/* Filtres mode — taille normale */}
+                <div className="d-flex gap-2 flex-wrap">
                   <button
-                    className={`btn btn-xs py-1 px-2 fs-11 ${!modeFilter ? "btn-primary" : "btn-phoenix-secondary"}`}
+                    className={`btn btn-sm ${!modeFilter ? "btn-primary" : "btn-phoenix-secondary"}`}
                     onClick={() => setModeFilter("")}
                   >
                     Tous
@@ -768,27 +796,27 @@ export default function TrackingMapPage() {
                   {Object.entries(MODE_CONFIG).map(([k, v]) => (
                     <button
                       key={k}
-                      className={`btn btn-xs py-1 px-2 fs-11 ${modeFilter === k ? `btn-phoenix-${v.badge}` : "btn-phoenix-secondary"}`}
+                      className={`btn btn-sm ${modeFilter === k ? `btn-phoenix-${v.badge}` : "btn-phoenix-secondary"}`}
                       onClick={() => setModeFilter(modeFilter === k ? "" : k)}
                     >
-                      <span className={`fas ${v.icon} me-1`} />
+                      <span className={`fas ${v.icon} me-2`} />
                       {v.label}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Liste scrollable */}
+              {/* ── Liste scrollable ── */}
               <div className="overflow-auto flex-grow-1">
                 {loading ? (
-                  <div className="text-center py-5 text-body-tertiary">
+                  <div className="text-center py-6 text-body-tertiary">
                     <span className="spinner-border spinner-border-sm me-2" />
                     Chargement…
                   </div>
                 ) : filtered.length === 0 ? (
-                  <div className="text-center py-5 text-body-tertiary">
-                    <span className="fas fa-map-marker-alt fs-4 d-block mb-2 opacity-50" />
-                    Aucune expédition active
+                  <div className="text-center py-6 text-body-tertiary">
+                    <span className="fas fa-map-marker-alt fs-3 d-block mb-2 opacity-50" />
+                    <p className="mb-0 fs-9">Aucune expédition active</p>
                   </div>
                 ) : (
                   filtered.map((s) => (
@@ -804,9 +832,10 @@ export default function TrackingMapPage() {
                 )}
               </div>
 
-              {/* Footer */}
-              <div className="p-3 border-top">
-                <p className="mb-0 fs-10 text-body-tertiary text-center">
+              {/* ── Footer ── */}
+              <div className="p-3 border-top bg-body-tertiary">
+                <p className="mb-0 fs-9 text-body-tertiary text-center">
+                  <span className="fas fa-layer-group me-2 opacity-50" />
                   {filtered.length} expédition{filtered.length !== 1 ? "s" : ""}{" "}
                   affichée{filtered.length !== 1 ? "s" : ""}
                 </p>

@@ -344,20 +344,22 @@ const TradeFlowMap = ({
     <div
       style={{
         position: "relative",
-        height: 480,
+        height: "100%",
+        minHeight: 480,
         width: "100%",
-        borderRadius: 8,
-        overflow: "hidden",
       }}
     >
-      {/* Conteneur Mapbox — remplit exactement le wrapper */}
       <div
         ref={containerRef}
-        style={{ position: "absolute", inset: 0 }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 8,
+          overflow: "hidden",
+        }}
         aria-label="Carte de suivi des expéditions TradeFlow"
       />
 
-      {/* Boutons custom superposés, ancrés en haut à droite dans le wrapper */}
       {showControls && (
         <div
           style={{

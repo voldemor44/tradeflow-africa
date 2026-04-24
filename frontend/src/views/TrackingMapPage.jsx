@@ -818,7 +818,7 @@ export default function TrackingMapPage() {
               className="col-12 col-lg-8 col-xl-9 position-relative"
               style={{ minHeight: 480 }}
             >
-              <div className="p-3 h-100">
+              <div className="p-3" style={{ height: "100%" }}>
                 <TradeFlowMap
                   shipments={filtered}
                   selectedId={selected?.id}
@@ -837,8 +837,6 @@ export default function TrackingMapPage() {
           </div>
         </div>
       </div>
-
-     
     </div>
   );
 }

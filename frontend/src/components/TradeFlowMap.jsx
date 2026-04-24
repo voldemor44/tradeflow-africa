@@ -10,7 +10,6 @@ const MAPBOX_CONFIG = {
     light: "mapbox://styles/themewagon/clj57pads001701qo25756jtw",
     dark: "mapbox://styles/themewagon/cljzg9juf007x01pk1bepfgew",
   },
-  // Centré sur le Golfe de Guinée — point médian entre l'Asie/Europe et Cotonou/Abidjan
   defaultCenter: [4.5, 5.5],
   defaultZoom: 2.8,
   defaultPitch: 20,
@@ -30,9 +29,6 @@ const isDark = () => window.config?.config?.phoenixTheme === "dark";
 
 // ─── HELPERS ───────────────────────────────────────────────
 
-/**
- * Crée le HTML du marqueur selon le type d'expédition
- */
 const createMarkerEl = (shipment, isSelected) => {
   const colors = MODE_COLORS[shipment.transport_mode] ?? MODE_COLORS.sea;
   const icons = {
@@ -59,10 +55,8 @@ const createMarkerEl = (shipment, isSelected) => {
     transition: all .2s ease;
     position: relative;
   `;
-
   el.innerHTML = `<i class="fas ${icon}" style="color:#fff; font-size:${isSelected ? 14 : 10}px;"></i>`;
 
-  // Anneau pulsant pour les bloquées
   if (isBlocked) {
     const pulse = document.createElement("div");
     pulse.style.cssText = `
@@ -75,13 +69,9 @@ const createMarkerEl = (shipment, isSelected) => {
     `;
     el.appendChild(pulse);
   }
-
   return el;
 };
 
-/**
- * HTML du popup au survol d'un marqueur
- */
 const createPopupHTML = (s) => {
   const fmtDate = (iso) => {
     if (!iso) return "—";
@@ -102,7 +92,6 @@ const createPopupHTML = (s) => {
     ];
     return `${d} ${mo[+m - 1]} ${y}`;
   };
-
   const statusBadgeColor = {
     on_hold: "danger",
     in_transit: "primary",
@@ -131,8 +120,8 @@ const createPopupHTML = (s) => {
         s.vessel
           ? `
         <div style="font-size:11px; color:var(--phoenix-body-tertiary-color);">
-          <i class="fas fa-ship me-1"></i>${s.vessel.name}
-          ${s.vessel.speed > 0 ? `· ${s.vessel.speed} kn` : "· À l'arrêt"}
+          <i class="fas fa-ship" style="margin-right:4px;"></i>${s.vessel.name}
+          ${s.vessel.speed > 0 ? "· " + s.vessel.speed + " kn" : "· À l'arrêt"}
         </div>`
           : ""
       }
@@ -140,7 +129,7 @@ const createPopupHTML = (s) => {
         s.road
           ? `
         <div style="font-size:11px; color:var(--phoenix-body-tertiary-color);">
-          <i class="fas fa-truck me-1"></i>${s.road.plate} · ${s.road.driver}
+          <i class="fas fa-truck" style="margin-right:4px;"></i>${s.road.plate} · ${s.road.driver}
         </div>`
           : ""
       }
@@ -157,15 +146,6 @@ const createPopupHTML = (s) => {
 
 // ─── COMPOSANT ─────────────────────────────────────────────
 
-/**
- * TradeFlowMap — Carte Mapbox adaptée à TradeFlow Africa
- *
- * Props :
- *  @param {Array}    shipments   - Expéditions actives avec champ vessel ou road contenant lat/lng
- *  @param {string}   selectedId  - ID de l'expédition sélectionnée (depuis le panneau liste)
- *  @param {Function} onSelect    - Callback (shipment) => void au clic sur un marqueur
- *  @param {boolean}  showControls
- */
 const TradeFlowMap = ({
   shipments = [],
   selectedId = null,
@@ -174,14 +154,13 @@ const TradeFlowMap = ({
 }) => {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef({}); // { [shipment.id]: { marker, el } }
+  const markersRef = useRef({});
   const popupRef = useRef(null);
 
-  // ── Initialisation de la carte ──────────────────────────
+  // ── Initialisation ─────────────────────────────────────
   useEffect(() => {
     if (!window.mapboxgl || !containerRef.current) return;
 
-    // Injecte le CSS de l'animation pulse si pas déjà présent
     if (!document.getElementById("tf-map-styles")) {
       const style = document.createElement("style");
       style.id = "tf-map-styles";
@@ -196,6 +175,9 @@ const TradeFlowMap = ({
           box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
         }
         .mapboxgl-popup-close-button { font-size: 16px; padding: 4px 8px; }
+        .mapboxgl-ctrl-top-right,
+        .mapboxgl-ctrl-bottom-right,
+        .mapboxgl-ctrl-bottom-left { display: none !important; }
       `;
       document.head.appendChild(style);
     }
@@ -220,7 +202,6 @@ const TradeFlowMap = ({
       maxWidth: "260px",
     });
 
-    // Changement de thème Phoenix
     const onThemeChange = ({ detail: { control } }) => {
       if (control !== "phoenixTheme") return;
       const t = window.config.config.phoenixTheme;
@@ -236,32 +217,26 @@ const TradeFlowMap = ({
     };
   }, []);
 
-  // ── Mise à jour des marqueurs et routes quand shipments change ──
+  // ── Marqueurs & routes ─────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     const addContent = () => {
-      // Supprime les anciens marqueurs
       Object.values(markersRef.current).forEach(({ marker }) =>
         marker.remove(),
       );
       markersRef.current = {};
 
-      // Supprime les anciennes couches de route
-      shipments.forEach((s) => {
-        const sourceId = `route-${s.id}`;
-        const layerId = `route-line-${s.id}`;
-
-        // Toujours supprimer le layer AVANT la source
-        if (map.getLayer(layerId)) {
-          map.removeLayer(layerId);
-        }
-
-        if (map.getSource(sourceId)) {
-          map.removeSource(sourceId);
-        }
-      });
+      // Layer avant source (ordre obligatoire Mapbox)
+      const existingLayers = map.getStyle()?.layers ?? [];
+      const existingSources = Object.keys(map.getStyle()?.sources ?? {});
+      existingLayers
+        .filter((l) => l.id.startsWith("route-line-"))
+        .forEach((l) => map.removeLayer(l.id));
+      existingSources
+        .filter((id) => id.startsWith("route-"))
+        .forEach((id) => map.removeSource(id));
 
       shipments.forEach((s) => {
         const pos = s.vessel ?? s.road;
@@ -270,7 +245,6 @@ const TradeFlowMap = ({
         const coords = [pos.lng, pos.lat];
         const isSelected = s.id === selectedId;
 
-        // ── Marqueur ──
         const el = createMarkerEl(s, isSelected);
         const marker = new window.mapboxgl.Marker({
           element: el,
@@ -279,7 +253,6 @@ const TradeFlowMap = ({
           .setLngLat(coords)
           .addTo(map);
 
-        // Clic → sélection
         el.addEventListener("click", (e) => {
           e.stopPropagation();
           onSelect(s);
@@ -291,9 +264,6 @@ const TradeFlowMap = ({
 
         markersRef.current[s.id] = { marker, el };
 
-        // ── Route origine → destination (ligne pointillée) ──
-        // Coordonnées des ports (approximatives — idéalement depuis une API de géocodage)
-        // Ici on trace depuis la position actuelle vers Cotonou / destination
         const destCoords = getPortCoords(
           s.destination_country,
           s.destination_port_or_city,
@@ -329,7 +299,6 @@ const TradeFlowMap = ({
       });
     };
 
-    // La carte est peut-être déjà chargée ou pas encore
     if (map.isStyleLoaded()) {
       addContent();
     } else {
@@ -337,19 +306,17 @@ const TradeFlowMap = ({
     }
   }, [shipments, selectedId]);
 
-  // ── Centrer sur l'expédition sélectionnée ───────────────
+  // ── Fly to sélection ───────────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedId) return;
-
     const s = shipments.find((x) => x.id === selectedId);
     const pos = s?.vessel ?? s?.road;
     if (!pos?.lat || !pos?.lng) return;
-
     map.flyTo({ center: [pos.lng, pos.lat], zoom: 5, speed: 1.2, curve: 1.4 });
   }, [selectedId, shipments]);
 
-  // ── Handlers contrôles ───────────────────────────────────
+  // ── Handlers ───────────────────────────────────────────
   const zoomIn = () => mapRef.current?.zoomIn();
   const zoomOut = () => mapRef.current?.zoomOut();
   const fullscreen = () => containerRef.current?.requestFullscreen?.();
@@ -361,46 +328,81 @@ const TradeFlowMap = ({
       speed: 1,
     });
 
+  const CONTROLS = [
+    { onClick: zoomIn, icon: "fa-plus", title: "Zoom +" },
+    { onClick: zoomOut, icon: "fa-minus", title: "Zoom -" },
+    { onClick: resetView, icon: "fa-earth-africa", title: "Vue globale" },
+    {
+      onClick: fullscreen,
+      icon: "fa-up-right-and-down-left-from-center",
+      title: "Plein écran",
+    },
+  ];
+
+  // ── Rendu ──────────────────────────────────────────────
   return (
-    <div className="position-relative w-100 h-100" style={{ minHeight: 480 }}>
+    <div
+      style={{
+        position: "relative",
+        height: 480,
+        width: "100%",
+        borderRadius: 8,
+        overflow: "hidden",
+      }}
+    >
+      {/* Conteneur Mapbox — remplit exactement le wrapper */}
       <div
         ref={containerRef}
-        className="rounded-2 w-100 h-100"
-        style={{ minHeight: 480 }}
+        style={{ position: "absolute", inset: 0 }}
         aria-label="Carte de suivi des expéditions TradeFlow"
       />
 
+      {/* Boutons custom superposés, ancrés en haut à droite dans le wrapper */}
       {showControls && (
-        <div className="mapbox-control-btn flight-map-control-btn">
-          <button
-            className="zoomIn d-none d-md-block"
-            onClick={zoomIn}
-            title="Zoom +"
-          >
-            <span className="fa-solid fa-plus" />
-          </button>
-          <button
-            className="zoomOut d-none d-md-block"
-            onClick={zoomOut}
-            title="Zoom -"
-          >
-            <span className="fa-solid fa-minus" />
-          </button>
-          <button
-            className="fullScreen mt-md-3"
-            onClick={fullscreen}
-            title="Plein écran"
-          >
-            <span className="fa-solid fa-up-right-and-down-left-from-center" />
-          </button>
-          <button
-            className="fullScreen mt-1"
-            onClick={resetView}
-            title="Vue globale"
-            style={{ marginTop: 4 }}
-          >
-            <span className="fa-solid fa-earth-africa" />
-          </button>
+        <div
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 10,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          {CONTROLS.map(({ onClick, icon, title }) => (
+            <button
+              key={title}
+              onClick={onClick}
+              title={title}
+              aria-label={title}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 6,
+                border: "none",
+                background: "rgba(255,255,255,0.95)",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#444",
+                fontSize: 13,
+                transition: "background .15s, color .15s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#0d6efd";
+                e.currentTarget.style.color = "#fff";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.95)";
+                e.currentTarget.style.color = "#444";
+              }}
+            >
+              <span className={`fa-solid ${icon}`} />
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -409,13 +411,8 @@ const TradeFlowMap = ({
 
 export default TradeFlowMap;
 
-// ─── UTILS CARTE ───────────────────────────────────────────
+// ─── UTILS ─────────────────────────────────────────────────
 
-/**
- * Coordonnées approximatives des principaux ports/villes.
- * En production : remplacer par un appel à l'API Mapbox Geocoding
- * ou stocker les coordonnées dans les modèles Django.
- */
 const PORT_COORDS = {
   Cotonou: [2.43, 6.35],
   Abidjan: [-3.99, 5.35],
@@ -440,9 +437,7 @@ const PORT_COORDS = {
 };
 
 const getPortCoords = (country, city) => {
-  // Cherche d'abord par nom de ville exact
   if (PORT_COORDS[city]) return PORT_COORDS[city];
-  // Cherche une correspondance partielle
   const key = Object.keys(PORT_COORDS).find(
     (k) =>
       city.toLowerCase().includes(k.toLowerCase()) ||
@@ -451,10 +446,6 @@ const getPortCoords = (country, city) => {
   return key ? PORT_COORDS[key] : null;
 };
 
-/**
- * Interpole une ligne en N points via turf (si disponible)
- * pour une courbe plus douce sur la carte
- */
 const interpolateLine = (from, to, steps = 100) => {
   if (!window.turf) return [from, to];
   try {

@@ -10,6 +10,7 @@ import Login from "./views/auth/Login";
 import TravelAgencyDash from "./views/TravelAgencyDash";
 import TrackingMapPage from "./views/TrackingMapPage";
 import DocumentsPage from "./views/DocumentsPage";
+import NotFoundPage from "./views/NotFoundPage";
 
 const router = createBrowserRouter([
   {
@@ -47,6 +48,7 @@ const router = createBrowserRouter([
           },
         ],
       },
+      { path: "*", element: <NotFoundPage /> },
     ],
   },
 ]);

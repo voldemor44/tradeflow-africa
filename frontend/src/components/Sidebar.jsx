@@ -189,49 +189,25 @@ const Sidebar = ({ alerts = {} }) => {
 
             {/* Carte & Tracking */}
             <li className="nav-item">
-              <NavGroup
-                id="tracking"
+              <NavSingleItem
+                to="/tracking/carte"
                 icon="map"
                 label="Carte & Tracking"
-                activePaths={["/tracking"]}
-              >
-                <NavSubItem to="/tracking/carte" label="Carte mondiale" />
-                <NavSubItem to="/tracking/navires" label="Navires en mer" />
-                <NavSubItem
-                  to="/tracking/terrestre"
-                  label="Transport terrestre"
-                />
-              </NavGroup>
+              />
             </li>
 
             {/* Documents */}
             <li className="nav-item">
-              <NavGroup
+              <NavSingleItem
                 id="documents"
                 icon="file-text"
                 label="Documents"
-                activePaths={["/documents"]}
+                to="/documents/list"
                 alertCount={
                   (alerts.documentsToValidate || 0) +
                   (alerts.documentsExpiring || 0)
                 }
-              >
-                <NavSubItem to="/documents" label="Tous les documents" />
-                <NavSubItem
-                  to="/documents/a-valider"
-                  label="À valider"
-                  badge={alerts.documentsToValidate}
-                />
-                <NavSubItem
-                  to="/documents/expirants"
-                  label="Expirants bientôt"
-                  badge={alerts.documentsExpiring}
-                />
-                <NavSubItem
-                  to="/documents/generateur"
-                  label="Générateur de documents"
-                />
-              </NavGroup>
+              />
             </li>
 
             {/* Partenaires */}

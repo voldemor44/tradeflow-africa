@@ -9,6 +9,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import Login from "./views/auth/Login";
 import TravelAgencyDash from "./views/TravelAgencyDash";
 import TrackingMapPage from "./views/TrackingMapPage";
+import DocumentsPage from "./views/DocumentsPage";
 
 const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ const router = createBrowserRouter([
           {
             path: "/tracking/carte",
             element: <TrackingMapPage />,
+          },
+          {
+            path: "/documents/list",
+            element: <DocumentsPage />,
           },
         ],
       },

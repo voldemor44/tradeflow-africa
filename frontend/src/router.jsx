@@ -11,6 +11,7 @@ import TravelAgencyDash from "./views/TravelAgencyDash";
 import TrackingMapPage from "./views/TrackingMapPage";
 import DocumentsPage from "./views/DocumentsPage";
 import NotFoundPage from "./views/NotFoundPage";
+import ShipmentDetailPage from "./views/ShipmentDetailPage ";
 
 const router = createBrowserRouter([
   {
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
           {
             path: "/expeditions",
             element: <ExpeditionsPage />,
+          },
+          {
+            path: "/expeditions/:id",
+            element: <ShipmentDetailPage />,
           },
           {
             path: "/tracking/carte",

@@ -659,19 +659,97 @@ const MapPlaceholder = ({ shipments, selectedId, onSelect }) => (
 // ─── COMPOSANT PRINCIPAL ───────────────────────────────────
 
 export default function TrackingMapPage() {
-  const [shipments, setShipments] = useState(DEMO_SHIPMENTS);
+  const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modeFilter, setModeFilter] = useState("");
   const [search, setSearch] = useState("");
 
-  // En production : fetch depuis l'API
-  // useEffect(() => {
-  //   setLoading(true);
-  //   axiosClient.get("/shipments/", { params: { is_archived: false, status: "in_transit,on_vessel,at_dest_port,customs,on_hold,out_for_delivery" } })
-  //     .then(({ data }) => setShipments(data.results))
-  //     .finally(() => setLoading(false));
-  // }, []);
+  const computeProgress = (etd, eta) => {
+    if (!etd || !eta) return 0;
+    const start = new Date(etd).getTime();
+    const end = new Date(eta).getTime();
+    const now = Date.now();
+    if (now <= start) return 0;
+    if (now >= end) return 100;
+    return Math.round(((now - start) / (end - start)) * 100);
+  };
+
+  useEffect(() => {
+    setLoading(true);
+
+    Promise.all([
+      axiosClient.get("/shipments/", {
+        params: {
+          is_archived: false,
+          status:
+            "in_transit,on_vessel,at_dest_port,customs,on_hold,out_for_delivery",
+        },
+      }),
+      axiosClient.get("/tracking/vessel/"),
+      axiosClient.get("/tracking/road/"),
+    ])
+      .then(
+        ([
+          { data: shipmentsData },
+          { data: vesselData },
+          { data: roadData },
+        ]) => {
+          // Indexe les trackings par shipment ID pour lookup O(1)
+          const vesselByShipment = {};
+          (vesselData.results ?? vesselData).forEach((v) => {
+            vesselByShipment[v.shipment] = v;
+          });
+
+          const roadByShipment = {};
+          (roadData.results ?? roadData).forEach((r) => {
+            roadByShipment[r.shipment] = r;
+          });
+
+          // Fusionne chaque expédition avec son tracking
+          const enriched = (shipmentsData.results ?? shipmentsData)
+            .map((s) => {
+              const vessel = vesselByShipment[s.id];
+              const road = roadByShipment[s.id];
+
+              return {
+                ...s,
+                // Normalise vers le format attendu par TradeFlowMap
+                vessel: vessel
+                  ? {
+                      name: vessel.vessel_name,
+                      lat: parseFloat(vessel.current_latitude),
+                      lng: parseFloat(vessel.current_longitude),
+                      heading: vessel.current_heading ?? 0,
+                      speed: parseFloat(vessel.current_speed_knots ?? 0),
+                      progress: computeProgress(
+                        s.estimated_departure,
+                        s.estimated_arrival,
+                      ), // calculé ci-dessous
+                    }
+                  : null,
+                road: road
+                  ? {
+                      plate: road.vehicle_plate,
+                      driver: road.driver_name,
+                      lat: parseFloat(road.current_latitude),
+                      lng: parseFloat(road.current_longitude),
+                      progress: computeProgress(
+                        s.estimated_departure,
+                        s.estimated_arrival,
+                      ),
+                    }
+                  : null,
+              };
+            })
+            // Ne garde que ceux qui ont une position connue
+            .filter((s) => s.vessel?.lat || s.road?.lat);
+
+          setShipments(enriched);
+        },
+      )
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(
     () =>

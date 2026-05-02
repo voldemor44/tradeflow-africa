@@ -12,6 +12,7 @@ import TrackingMapPage from "./views/TrackingMapPage";
 import DocumentsPage from "./views/DocumentsPage";
 import NotFoundPage from "./views/NotFoundPage";
 import ShipmentDetailPage from "./views/ShipmentDetailPage ";
+import ShipmentDocumentsPage from "./views/ShipmentDocumentsPage";
 
 const router = createBrowserRouter([
   {
@@ -50,6 +51,10 @@ const router = createBrowserRouter([
           {
             path: "/documents/list",
             element: <DocumentsPage />,
+          },
+          {
+            path: "/documents/",
+            element: <ShipmentDocumentsPage />,
           },
         ],
       },

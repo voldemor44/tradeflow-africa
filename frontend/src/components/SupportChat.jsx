@@ -180,7 +180,7 @@ const SupportChat = () => {
       </div>
       <button className="btn btn-support-chat p-0 border border-translucent">
         <span className="fs-8 btn-text text-primary text-nowrap">
-          Chat demo
+          Support Chat
         </span>
         <span className="ping-icon-wrapper mt-n4 ms-n6 mt-sm-0 ms-sm-2 position-absolute position-sm-relative">
           <span className="ping-icon-bg" />

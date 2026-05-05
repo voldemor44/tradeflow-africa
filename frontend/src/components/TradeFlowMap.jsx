@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import mapboxgl from "mapbox-gl";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
@@ -14,6 +15,8 @@ const MAPBOX_CONFIG = {
   defaultZoom: 2.8,
   defaultPitch: 20,
 };
+
+mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
 
 const MODE_COLORS = {
   sea: { primary: "#0dcaf0", secondary: "#0a9abd" },
@@ -159,7 +162,7 @@ const TradeFlowMap = ({
 
   // ── Initialisation ─────────────────────────────────────
   useEffect(() => {
-    if (!window.mapboxgl || !containerRef.current) return;
+    if (!mapboxgl || !containerRef.current) return;
 
     if (!document.getElementById("tf-map-styles")) {
       const style = document.createElement("style");
@@ -182,11 +185,11 @@ const TradeFlowMap = ({
       document.head.appendChild(style);
     }
 
-    window.mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
+    mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
     const theme = window.config?.config?.phoenixTheme ?? "light";
     const mapStyle = MAPBOX_CONFIG.styles[theme] ?? MAPBOX_CONFIG.styles.light;
 
-    const map = new window.mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: containerRef.current,
       style: mapStyle,
       center: MAPBOX_CONFIG.defaultCenter,
@@ -196,7 +199,7 @@ const TradeFlowMap = ({
     });
 
     mapRef.current = map;
-    popupRef.current = new window.mapboxgl.Popup({
+    popupRef.current = new mapboxgl.Popup({
       closeButton: true,
       closeOnClick: false,
       maxWidth: "260px",
@@ -246,7 +249,7 @@ const TradeFlowMap = ({
         const isSelected = s.id === selectedId;
 
         const el = createMarkerEl(s, isSelected);
-        const marker = new window.mapboxgl.Marker({
+        const marker = new mapboxgl.Marker({
           element: el,
           anchor: "center",
         })

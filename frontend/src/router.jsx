@@ -1,5 +1,4 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "./App";
 import TradeFlowDashboard from "./views/TradeFlowDashboard";
 import ExpeditionsPage from "./views/ExpeditionsPage";
 import Register from "./views/auth/Register";

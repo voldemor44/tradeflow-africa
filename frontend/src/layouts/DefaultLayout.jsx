@@ -7,7 +7,7 @@ const DefaultLayout = () => {
 
   useEffect(() => {
     if (path == "/") {
-      navigate("/register");
+      navigate("/login");
     }
   }, []);
   return (

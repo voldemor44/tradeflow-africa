@@ -287,6 +287,7 @@ const TradeFlowMap = ({
         const isBlock = s.status === "on_hold";
         const lineColor = isBlock ? "#dc3545" : colors.primary;
 
+        // route line adding 
         map.addSource(`route-${s.id}`, { type: "geojson", data: routeData });
         map.addLayer({
           id: `route-line-${s.id}`,
@@ -294,7 +295,7 @@ const TradeFlowMap = ({
           type: "line",
           paint: {
             "line-color": lineColor,
-            "line-width": isSelected ? 2.5 : 1.5,
+            "line-width": isSelected ? 2.5 : 1.8,
             "line-opacity": isSelected ? 0.9 : 0.4,
             "line-dasharray": isBlock ? [2, 2] : [1],
           },

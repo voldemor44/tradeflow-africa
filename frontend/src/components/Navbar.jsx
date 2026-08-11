@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from "react-router";
 import Sidebar from "./Sidebar";
 import axiosClient from "../axios-client";
 import { useStateContext } from "../contexts/ContextProvider";
+import { useTranslation } from "react-i18next";
 
 // ============================================================
 // SOUS-COMPOSANTS
@@ -18,7 +19,9 @@ const NotificationItem = ({
   time,
   date,
   isRead,
-}) => (
+}) => {
+  const { t } = useTranslation();
+  return (
   <div
     className={`px-2 px-sm-3 py-3 notification-card position-relative ${isRead ? "read" : "unread"} border-bottom`}
   >
@@ -62,67 +65,69 @@ const NotificationItem = ({
         </button>
         <div className="dropdown-menu py-2">
           <a className="dropdown-item" href="#!">
-            {isRead ? "Marquer comme non lu" : "Marquer comme lu"}
+            {isRead ? t("notifications.markUnread") : t("notifications.markRead")}
           </a>
         </div>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // Dropdown notifications
 const NotificationsDropdown = ({ alerts = {} }) => {
+  const { t } = useTranslation();
   const unreadCount = alerts.notifications || 0;
 
   // Données de notifications métier TradeFlow
   const notifications = [
     {
       id: 1,
-      name: "Expédition TFA-2025-0042",
-      message: "Navire MV EVER GIVEN arrivé au Port de Cotonou.",
+      name: t("notifications.item1Name"),
+      message: t("notifications.item1Msg"),
       emoji: "🚢",
       time: "10m",
-      date: "Aujourd'hui, 10:41",
+      date: `${t("notifications.today")}, 10:41`,
       isRead: false,
       initials: "EX",
     },
     {
       id: 2,
-      name: "Document expirant",
-      message: "Le certificat d'origine de TFA-2025-0039 expire dans 3 jours.",
+      name: t("notifications.item2Name"),
+      message: t("notifications.item2Msg"),
       emoji: "⚠️",
       time: "1h",
-      date: "Aujourd'hui, 09:30",
+      date: `${t("notifications.today")}, 09:30`,
       isRead: false,
       initials: "DO",
     },
     {
       id: 3,
-      name: "Expédition bloquée",
-      message: "TFA-2025-0038 est bloquée en douane — document manquant.",
+      name: t("notifications.item3Name"),
+      message: t("notifications.item3Msg"),
       emoji: "🔴",
       time: "2h",
-      date: "Aujourd'hui, 08:15",
+      date: `${t("notifications.today")}, 08:15`,
       isRead: false,
       initials: "EX",
     },
     {
       id: 4,
-      name: "Paiement en retard",
-      message: "Échéance dépassée pour le transitaire BESCO Cotonou.",
+      name: t("notifications.item4Name"),
+      message: t("notifications.item4Msg"),
       emoji: "💳",
-      time: "hier",
-      date: "Hier, 17:00",
+      time: t("notifications.yesterday"),
+      date: `${t("notifications.yesterday")}, 17:00`,
       isRead: true,
       initials: "FI",
     },
     {
       id: 5,
-      name: "Nouveau dossier assigné",
-      message: "Le dossier TFA-2025-0045 vous a été assigné par l'admin.",
+      name: t("notifications.item5Name"),
+      message: t("notifications.item5Msg"),
       emoji: "📋",
-      time: "hier",
-      date: "Hier, 14:22",
+      time: t("notifications.yesterday"),
+      date: `${t("notifications.yesterday")}, 14:22`,
       isRead: true,
       initials: "EQ",
     },
@@ -159,13 +164,13 @@ const NotificationsDropdown = ({ alerts = {} }) => {
         <div className="card position-relative border-0">
           <div className="card-header p-2">
             <div className="d-flex justify-content-between align-items-center">
-              <h5 className="text-body-emphasis mb-0">Notifications</h5>
+              <h5 className="text-body-emphasis mb-0">{t("notifications.title")}</h5>
               {unreadCount > 0 && (
                 <button
                   className="btn btn-link p-0 fs-9 fw-normal"
                   type="button"
                 >
-                  Tout marquer comme lu
+                  {t("notifications.markAllRead")}
                 </button>
               )}
             </div>
@@ -180,7 +185,7 @@ const NotificationsDropdown = ({ alerts = {} }) => {
           <div className="card-footer p-0 border-top border-translucent border-0">
             <div className="my-2 text-center fw-bold fs-10 text-body-tertiary">
               <NavLink className="fw-bolder" to="/parametres/notifications">
-                Voir tout l'historique
+                {t("notifications.viewHistory")}
               </NavLink>
             </div>
           </div>
@@ -194,7 +199,8 @@ const NotificationsDropdown = ({ alerts = {} }) => {
 const UserDropdown = ({ user = {} }) => {
   const navigate = useNavigate();
   const { refreshToken } = useStateContext();
-  const { name = "Utilisateur", role = "Opérateur", avatar = null } = user;
+  const { t } = useTranslation();
+  const { name = t("userMenu.defaultName"), role = t("userMenu.defaultRole"), avatar = null } = user;
   const initials = name
     .split(" ")
     .map((n) => n[0])
@@ -274,7 +280,7 @@ const UserDropdown = ({ user = {} }) => {
                     className="me-2 text-body align-bottom"
                     data-feather="user"
                   />
-                  Mon profil
+                  {t("userMenu.myProfile")}
                 </NavLink>
               </li>
               <li className="nav-item">
@@ -283,7 +289,7 @@ const UserDropdown = ({ user = {} }) => {
                     className="me-2 text-body align-bottom"
                     data-feather="pie-chart"
                   />
-                  Tableau de bord
+                  {t("userMenu.dashboard")}
                 </NavLink>
               </li>
               <li className="nav-item">
@@ -295,7 +301,7 @@ const UserDropdown = ({ user = {} }) => {
                     className="me-2 text-body align-bottom"
                     data-feather="briefcase"
                   />
-                  Mon organisation
+                  {t("userMenu.myOrganisation")}
                 </NavLink>
               </li>
               <li className="nav-item">
@@ -304,7 +310,7 @@ const UserDropdown = ({ user = {} }) => {
                     className="me-2 text-body align-bottom"
                     data-feather="settings"
                   />
-                  Paramètres
+                  {t("userMenu.settings")}
                 </NavLink>
               </li>
               <li className="nav-item">
@@ -313,7 +319,7 @@ const UserDropdown = ({ user = {} }) => {
                     className="me-2 text-body align-bottom"
                     data-feather="help-circle"
                   />
-                  Centre d'aide
+                  {t("userMenu.helpCenter")}
                 </NavLink>
               </li>
               <li className="nav-item">
@@ -325,7 +331,7 @@ const UserDropdown = ({ user = {} }) => {
                     className="me-2 text-body align-bottom"
                     data-feather="credit-card"
                   />
-                  Abonnement
+                  {t("userMenu.subscription")}
                 </NavLink>
               </li>
             </ul>
@@ -337,20 +343,20 @@ const UserDropdown = ({ user = {} }) => {
                 onClick={handleLogout}
               >
                 <span className="me-2" data-feather="log-out" />
-                Se déconnecter
+                {t("userMenu.logout")}
               </button>
             </div>
             <div className="mb-2 text-center fw-bold fs-10 text-body-quaternary">
               <a className="text-body-quaternary me-1" href="#!">
-                Confidentialité
+                {t("userMenu.privacy")}
               </a>
               •
               <a className="text-body-quaternary mx-1" href="#!">
-                CGU
+                {t("userMenu.terms")}
               </a>
               •
               <a className="text-body-quaternary ms-1" href="#!">
-                Cookies
+                {t("userMenu.cookies")}
               </a>
             </div>
           </div>
@@ -361,10 +367,56 @@ const UserDropdown = ({ user = {} }) => {
 };
 
 // ============================================================
+// SÉLECTEUR DE LANGUE
+// ============================================================
+
+const LanguageSwitcher = () => {
+  const { i18n } = useTranslation();
+  const current = i18n.language?.startsWith("en") ? "en" : "fr";
+
+  const changeLanguage = (lng) => {
+    i18n.changeLanguage(lng);
+  };
+
+  return (
+    <li className="nav-item dropdown">
+      <a
+        className="nav-link position-relative d-flex align-items-center gap-2 px-2"
+        href="#!"
+        role="button"
+        data-bs-toggle="dropdown"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        <span className="fas fa-globe fs-7" />
+        <span className="fw-semibold fs-9 text-uppercase">{current}</span>
+      </a>
+      <div className="dropdown-menu dropdown-menu-end py-2">
+        <button
+          className={`dropdown-item w-100 text-start ${current === "fr" ? "active" : ""}`}
+          type="button"
+          onClick={() => changeLanguage("fr")}
+        >
+          Français
+        </button>
+        <button
+          className={`dropdown-item w-100 text-start ${current === "en" ? "active" : ""}`}
+          type="button"
+          onClick={() => changeLanguage("en")}
+        >
+          English
+        </button>
+      </div>
+    </li>
+  );
+};
+
+// ============================================================
 // NAVBAR TRADEFLOW AFRICA
 // ============================================================
 
 const Navbar = ({ alerts = {}, user = {} }) => {
+  const { t } = useTranslation();
   // Déclenche feather.replace() après chaque render pour activer les icônes
   useEffect(() => {
     if (typeof feather !== "undefined") {
@@ -391,7 +443,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
               data-bs-target="#navbarVerticalCollapse"
               aria-controls="navbarVerticalCollapse"
               aria-expanded="false"
-              aria-label="Ouvrir la navigation"
+              aria-label={t("navbar.openNavigation")}
             >
               <span className="navbar-toggle-icon">
                 <span className="toggle-line" />
@@ -431,8 +483,8 @@ const Navbar = ({ alerts = {}, user = {} }) => {
               <input
                 className="form-control search-input fuzzy-search rounded-pill form-control-sm"
                 type="search"
-                placeholder="Rechercher une expédition, un document, un partenaire..."
-                aria-label="Rechercher"
+                placeholder={t("navbar.searchPlaceholder")}
+                aria-label={t("navbar.searchAria")}
               />
               <span className="fas fa-search search-box-icon" />
             </form>
@@ -440,13 +492,13 @@ const Navbar = ({ alerts = {}, user = {} }) => {
               className="btn-close position-absolute end-0 top-50 translate-middle cursor-pointer shadow-none"
               data-bs-dismiss="search"
             >
-              <button className="btn btn-link p-0" aria-label="Fermer" />
+              <button className="btn btn-link p-0" aria-label={t("navbar.close")} />
             </div>
             <div className="dropdown-menu border start-0 py-0 overflow-hidden w-100">
               <div className="scrollbar-overlay" style={{ maxHeight: "30rem" }}>
                 <div className="list pb-3">
                   <h6 className="dropdown-header text-body-highlight fs-9 border-bottom border-translucent py-2 lh-sm">
-                    Recherches récentes
+                    {t("navbar.recentSearches")}
                   </h6>
                   <div className="py-2">
                     <a className="dropdown-item" href="#!">
@@ -474,7 +526,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
                   </div>
                   <hr className="my-0" />
                   <h6 className="dropdown-header text-body-highlight fs-9 border-bottom border-translucent py-2 lh-sm">
-                    Expéditions récentes
+                    {t("navbar.recentExpeditions")}
                   </h6>
                   <div className="py-2">
                     <a
@@ -510,7 +562,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
                   </div>
                   <hr className="my-0" />
                   <h6 className="dropdown-header text-body-highlight fs-9 border-bottom border-translucent py-2 lh-sm">
-                    Partenaires
+                    {t("navbar.partners")}
                   </h6>
                   <div className="py-2">
                     <a className="dropdown-item" href="#!">
@@ -535,7 +587,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
                   <hr className="my-0" />
                   <div className="text-center py-2">
                     <p className="fallback fw-bold fs-7 d-none">
-                      Aucun résultat trouvé.
+                      {t("navbar.noResult")}
                     </p>
                   </div>
                 </div>
@@ -545,6 +597,9 @@ const Navbar = ({ alerts = {}, user = {} }) => {
 
           {/* ── DROITE : Actions + Profil ─────────────── */}
           <ul className="navbar-nav navbar-nav-icons flex-row">
+            {/* Sélecteur de langue */}
+            <LanguageSwitcher />
+
             {/* Toggle Dark/Light mode */}
             <li className="nav-item">
               <div className="theme-control-toggle fa-icon-wait px-2">
@@ -560,7 +615,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
                   htmlFor="themeControlToggle"
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
-                  data-bs-title="Mode sombre"
+                  data-bs-title={t("navbar.darkMode")}
                   style={{ height: 32, width: 32 }}
                 >
                   <span className="icon" data-feather="moon" />
@@ -570,7 +625,7 @@ const Navbar = ({ alerts = {}, user = {} }) => {
                   htmlFor="themeControlToggle"
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
-                  data-bs-title="Mode clair"
+                  data-bs-title={t("navbar.lightMode")}
                   style={{ height: 32, width: 32 }}
                 >
                   <span className="icon" data-feather="sun" />

@@ -6,23 +6,25 @@ import BookingValueChart from "../components/travel_agency/BookingValueChart";
 import CommissionChart from "../components/travel_agency/CommissionChart";
 import CancelBookingChart from "../components/travel_agency/CancelBookingChart";
 import FinancialActivitySessions from "../components/travel_agency/FinancialActivitySessions";
+import { useTranslation, Trans } from "react-i18next";
 
 const TravelAgencyDash = () => {
+  const { t } = useTranslation();
   return (
     <>
       <div className="row mb-4 mb-xl-6 mb-xxl-4 gy-3 justify-content-between">
         <div className="col-auto">
-          <h2 className="mb-0 text-body-emphasis">Travel Agency</h2>
+          <h2 className="mb-0 text-body-emphasis">{t("travelAgency.title")}</h2>
         </div>
         <div className="col-auto">
           <div className="d-flex gap-3">
             <a className="btn btn-phoenix-primary" href="#!">
               <span className="fa-solid fa-plus me-2" />
-              New Package
+              {t("travelAgency.newPackage")}
             </a>
             <a className="btn btn-primary px-4 px-sm-11" href="#!">
               <span className="fa-regular fa-calendar-days me-2" />
-              Book Now
+              {t("travelAgency.bookNow")}
             </a>
           </div>
         </div>
@@ -34,7 +36,7 @@ const TravelAgencyDash = () => {
             <div className="col-12 col-xl-5 col-xxl-12">
               <div className="row g-0">
                 <div className="col-6 col-xl-12 col-xxl-6 border-bottom border-end border-end-xl-0 border-end-xxl pb-4 pt-4 pt-xl-0 pt-xxl-4 pe-4 pe-sm-5 pe-xl-0 pe-xxl-5">
-                  <h5 className="text-body mb-4">Total Value</h5>
+                  <h5 className="text-body mb-4">{t("travelAgency.totalValue")}</h5>
                   <div className="d-md-flex flex-between-center">
                     <BookingValueChart />
                     <div className="mt-4 mt-md-0">
@@ -44,13 +46,13 @@ const TravelAgencyDash = () => {
                         23.35%
                       </span>
                       <span className="fs-9 text-body-secondary d-block d-sm-inline mt-1">
-                        From last month
+                        {t("travelAgency.fromLastMonth")}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="col-6 col-xl-12 col-xxl-6 border-bottom py-4 ps-4 ps-sm-5 ps-xl-0 ps-xxl-5">
-                  <h5 className="text-body mb-4">Booked Flights</h5>
+                  <h5 className="text-body mb-4">{t("travelAgency.bookedFlights")}</h5>
                   <div className="d-md-flex flex-between-center">
                     <div className="d-md-flex align-items-center gap-2 order-sm-0 order-md-1">
                       <span
@@ -59,7 +61,7 @@ const TravelAgencyDash = () => {
                       />
                       <div className="d-flex d-md-block gap-2 align-items-center mt-1 mt-md-0">
                         <p className="fs-9 mb-0 mb-md-2 text-body-tertiary text-nowrap">
-                          Rain Chances
+                          {t("travelAgency.rainChances")}
                         </p>
                         <h4 className="text-body-highlight mb-0">95%</h4>
                       </div>
@@ -71,13 +73,13 @@ const TravelAgencyDash = () => {
                         3.98%
                       </span>
                       <span className="fs-9 text-body-secondary text-nowrap d-block d-sm-inline mt-1">
-                        From last month
+                        {t("travelAgency.fromLastMonth")}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="col-6 col-xl-12 col-xxl-6 border-bottom-xl border-bottom-xxl-0 border-end border-end-xl-0 border-end-xxl py-4 pe-4 pe-sm-5 pe-xl-0 pe-xxl-5">
-                  <h5 className="text-body mb-4">Commission</h5>
+                  <h5 className="text-body mb-4">{t("travelAgency.commission")}</h5>
                   <div className="d-md-flex flex-between-center">
                     <CommissionChart />
                     <div className="mt-3 mt-md-0">
@@ -87,13 +89,13 @@ const TravelAgencyDash = () => {
                         12.21%
                       </span>
                       <span className="fs-9 text-body-secondary d-block d-sm-inline mt-1">
-                        From last month
+                        {t("travelAgency.fromLastMonth")}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="col-6 col-xl-12 col-xxl-6 py-4 ps-4 ps-sm-5 ps-xl-0 ps-xxl-5">
-                  <h5 className="text-body mb-4">Canceled Booking</h5>
+                  <h5 className="text-body mb-4">{t("travelAgency.canceledBooking")}</h5>
                   <div className="d-md-flex flex-between-center">
                     <CancelBookingChart />
                     <div className="mt-3 mt-md-0">
@@ -103,7 +105,7 @@ const TravelAgencyDash = () => {
                         5.76%
                       </span>
                       <span className="fs-9 text-body-secondary d-block d-sm-inline mt-1">
-                        From last month
+                        {t("travelAgency.fromLastMonth")}
                       </span>
                     </div>
                   </div>
@@ -122,9 +124,9 @@ const TravelAgencyDash = () => {
               >
                 <div className="card-header border-0 d-flex justify-content-between align-items-start">
                   <div>
-                    <h3 className="text-body-highlight">Visitors</h3>
+                    <h3 className="text-body-highlight">{t("travelAgency.visitors")}</h3>
                     <p className="mb-0 text-body-tertiary">
-                      Users across countries
+                      {t("travelAgency.usersAcrossCountries")}
                     </p>
                   </div>
                   <div className="dropdown">
@@ -144,13 +146,13 @@ const TravelAgencyDash = () => {
                     </button>
                     <div className="dropdown-menu dropdown-menu-end">
                       <a className="dropdown-item" href="#">
-                        Action
+                        {t("travelAgency.action")}
                       </a>
                       <a className="dropdown-item" href="#">
-                        Another action
+                        {t("travelAgency.anotherAction")}
                       </a>
                       <a className="dropdown-item" href="#">
-                        Something else here
+                        {t("travelAgency.somethingElse")}
                       </a>
                     </div>
                   </div>
@@ -163,7 +165,7 @@ const TravelAgencyDash = () => {
                     >
                       0
                     </span>
-                    <span className="fs-9 fw-normal">User per second</span>
+                    <span className="fs-9 fw-normal">{t("travelAgency.usersPerSecond")}</span>
                   </h4>
                   <div
                     className="echart-country-wise-visitors"
@@ -178,20 +180,20 @@ const TravelAgencyDash = () => {
                             data-sort="country"
                             style={{ minWidth: 100 }}
                           >
-                            COUNTRY NAME
+                            {t("travelAgency.countryName")}
                           </th>
                           <th
                             className="sort align-middle"
                             data-sort="users"
                             style={{ minWidth: 115 }}
                           >
-                            USERS
+                            {t("travelAgency.users")}
                           </th>
                           <th
                             className="sort text-end align-middle"
                             data-sort="status"
                           >
-                            STATUS
+                            {t("travelAgency.status")}
                           </th>
                         </tr>
                       </thead>
@@ -295,7 +297,7 @@ const TravelAgencyDash = () => {
                       data-list-info="data-list-info"
                     />
                     <a className="fw-bold fs-9 ms-auto" href="#!">
-                      View all
+                      {t("travelAgency.viewAll")}
                       <span
                         className="fas fa-angle-right ms-1"
                         data-fa-transform="down-1"
@@ -309,16 +311,16 @@ const TravelAgencyDash = () => {
               <div className="card h-100">
                 <div className="card-header border-0 pb-2 d-flex justify-content-between align-items-start">
                   <div>
-                    <h3 className="text-body-highlight">Holidays</h3>
+                    <h3 className="text-body-highlight">{t("travelAgency.holidays")}</h3>
                     <p className="mb-sm-0 text-body-tertiary">
-                      Holidays next month
+                      {t("travelAgency.holidaysNextMonth")}
                     </p>
                   </div>
                   <a
                     className="btn btn-sm btn-phoenix-secondary d-flex align-items-center w-max-content"
                     href="#!"
                   >
-                    <span className="text-nowrap">Calender</span>
+                    <span className="text-nowrap">{t("travelAgency.calendar")}</span>
                     <span className="fa-solid fa-chevron-right ms-2 fs-10" />
                   </a>
                 </div>
@@ -344,18 +346,20 @@ const TravelAgencyDash = () => {
                 <div className="card-body z-5">
                   <div>
                     <h3 className="text-body-highlight mb-3">
-                      Phoenix integrations
+                      {t("travelAgency.phoenixIntegrations")}
                     </h3>
                     <p className="text-body-tertiary mb-4 w-75 w-xl-100">
-                      Phoenix improves efficiency instantly and effortlessly
-                      <br className="d-none d-xxl-block" /> by allowing easy
-                      &amp; simple connection{" "}
-                      <br className="d-none d-xl-block" /> to other popular
-                      programs
+                      <Trans i18nKey="travelAgency.phoenixDescription">
+                        Phoenix improves efficiency instantly and effortlessly
+                        <br className="d-none d-xxl-block" /> by allowing easy
+                        &amp; simple connection
+                        <br className="d-none d-xl-block" /> to other popular
+                        programs
+                      </Trans>
                     </p>
                     <a className="btn btn-sm btn-phoenix-primary" href="#!">
-                      <span className="fa-solid fa-link me-1"> </span>Connect
-                      Now
+                      <span className="fa-solid fa-link me-1"> </span>
+                      {t("travelAgency.connectNow")}
                     </a>
                   </div>
                 </div>
@@ -371,14 +375,14 @@ const TravelAgencyDash = () => {
             <div className="card-header pb-3">
               <div className="row justify-content-between g-3">
                 <div className="col-auto">
-                  <h3 className="text-body-highlight">Gross Profit</h3>
-                  <p className="mb-0">Annual income according to the board</p>
+                  <h3 className="text-body-highlight">{t("travelAgency.grossProfit")}</h3>
+                  <p className="mb-0">{t("travelAgency.annualIncome")}</p>
                 </div>
                 <div className="col-auto">
                   <select className="form-select form-select-sm">
-                    <option>Last Fiscal Year</option>
-                    <option>Last Calendar year</option>
-                    <option>Last Quarter</option>
+                    <option>{t("travelAgency.lastFiscalYear")}</option>
+                    <option>{t("travelAgency.lastCalendarYear")}</option>
+                    <option>{t("travelAgency.lastQuarter")}</option>
                   </select>
                 </div>
               </div>
@@ -401,7 +405,7 @@ const TravelAgencyDash = () => {
                         />
                         <div>
                           <h6 className="mb-0 text-body fw-semibold mb-2">
-                            Flight
+                            {t("travelAgency.flight")}
                           </h6>
                           <h5 className="mb-0 text-body">$162,791,400</h5>
                         </div>
@@ -424,7 +428,7 @@ const TravelAgencyDash = () => {
                         />
                         <div>
                           <h6 className="mb-0 text-body fw-semibold mb-2">
-                            Flight (Package)
+                            {t("travelAgency.flightPackage")}
                           </h6>
                           <h5 className="mb-0 text-body">$135,659,500</h5>
                         </div>
@@ -447,7 +451,7 @@ const TravelAgencyDash = () => {
                         />
                         <div>
                           <h6 className="mb-0 text-body fw-semibold mb-2">
-                            Hotel
+                            {t("travelAgency.hotel")}
                           </h6>
                           <h5 className="mb-0 text-body">$271,319,000</h5>
                         </div>
@@ -470,7 +474,7 @@ const TravelAgencyDash = () => {
                         />
                         <div>
                           <h6 className="mb-0 text-body fw-semibold mb-2">
-                            Hotel (Package)
+                            {t("travelAgency.hotelPackage")}
                           </h6>
                           <h5 className="mb-0 text-body">$162,791,400</h5>
                         </div>
@@ -495,16 +499,16 @@ const TravelAgencyDash = () => {
           <div className="card h-100">
             <div className="card-header pb-3 d-sm-flex d-xl-block d-xxl-flex justify-content-between align-items-start">
               <div>
-                <h3 className="text-body-highlight">Bookings</h3>
-                <p className="mb-0">Completed and canceled bookings</p>
+                <h3 className="text-body-highlight">{t("travelAgency.bookings")}</h3>
+                <p className="mb-0">{t("travelAgency.completedCanceledBookings")}</p>
               </div>
               <select
                 className="form-select form-select-sm pe-9 w-auto mt-3 mt-sm-0 mt-xl-3 mt-xxl-0"
                 data-booking-options="data-booking-options"
               >
-                <option value={0}>Hotel</option>
-                <option value={1}>Flight</option>
-                <option value={2}>Trip</option>
+                <option value={0}>{t("travelAgency.hotel")}</option>
+                <option value={1}>{t("travelAgency.flight")}</option>
+                <option value={2}>{t("travelAgency.trip")}</option>
               </select>
             </div>
             <div className="card-body">
@@ -521,7 +525,7 @@ const TravelAgencyDash = () => {
         <div data-list='{"valueNames":["flightNo","vendor","weather","route","destination","status","time"],"page":4}'>
           <div className="row gx-0 gy-3 align-items-center py-4">
             <div className="col-xl-auto">
-              <h3 className="mb-0">Flights </h3>
+              <h3 className="mb-0">{t("travelAgency.flights")} </h3>
             </div>
             <div className="col-auto flex-1">
               <div className="d-flex flex-between-center">
@@ -531,8 +535,8 @@ const TravelAgencyDash = () => {
                       <input
                         className="form-control search-input search"
                         type="search"
-                        placeholder="Search by Flight no."
-                        aria-label="Search"
+                        placeholder={t("travelAgency.searchByFlightNo")}
+                        aria-label={t("travelAgency.search")}
                       />
                       <span className="fas fa-search search-box-icon" />
                     </form>
@@ -556,7 +560,7 @@ const TravelAgencyDash = () => {
                       href="#!"
                       data-list-view="*"
                     >
-                      View all
+                      {t("travelAgency.viewAll")}
                       <span
                         className="fas fa-angle-right ms-1"
                         data-fa-transform="down-1"
@@ -567,13 +571,13 @@ const TravelAgencyDash = () => {
                       href="#!"
                       data-list-view="less"
                     >
-                      View Less
+                      {t("travelAgency.viewLess")}
                     </a>
                   </div>
                   <button
                     className="btn btn-phoenix-primary px-3 me-1 ms-sm-4"
                     type="button"
-                    title="Previous"
+                    title={t("travelAgency.previous")}
                     data-list-pagination="prev"
                   >
                     <span
@@ -584,7 +588,7 @@ const TravelAgencyDash = () => {
                   <button
                     className="btn btn-phoenix-primary px-3"
                     type="button"
-                    title="Next"
+                    title={t("travelAgency.next")}
                     data-list-pagination="next"
                   >
                     <span
@@ -615,7 +619,7 @@ const TravelAgencyDash = () => {
                     scope="col"
                     data-sort="flightNo"
                   >
-                    FLIGHTS NO.
+                    {t("travelAgency.flightsNo")}
                   </th>
                   <th
                     className="sort align-middle text-body-tertiary"
@@ -623,7 +627,7 @@ const TravelAgencyDash = () => {
                     data-sort="vendor"
                     style={{ width: 170 }}
                   >
-                    VENDOR
+                    {t("travelAgency.vendor")}
                   </th>
                   <th
                     className="sort text-start align-middle text-body-tertiary"
@@ -631,7 +635,7 @@ const TravelAgencyDash = () => {
                     data-sort="weather"
                     style={{ width: 250 }}
                   >
-                    WEATHER
+                    {t("travelAgency.weather")}
                   </th>
                   <th
                     className="sort align-middle text-body-tertiary"
@@ -639,7 +643,7 @@ const TravelAgencyDash = () => {
                     data-sort="route"
                     style={{ width: 180 }}
                   >
-                    ROUTE
+                    {t("travelAgency.route")}
                   </th>
                   <th
                     className="sort align-middle text-body-tertiary"
@@ -647,7 +651,7 @@ const TravelAgencyDash = () => {
                     style={{ minWidth: 280 }}
                     data-sort="destination"
                   >
-                    DESTINATION
+                    {t("travelAgency.destination")}
                   </th>
                   <th
                     className="sort text-end align-middle text-body-tertiary"
@@ -655,7 +659,7 @@ const TravelAgencyDash = () => {
                     data-sort="status"
                     style={{ minWidth: 120 }}
                   >
-                    STATUS
+                    {t("travelAgency.status")}
                   </th>
                   <th
                     className="sort align-middle text-end text-body-tertiary"
@@ -663,7 +667,7 @@ const TravelAgencyDash = () => {
                     data-sort="time"
                     style={{ minWidth: 200 }}
                   >
-                    TIME
+                    {t("travelAgency.time")}
                   </th>
                   <th className="text-end pe-0" scope="col" />
                 </tr>
@@ -701,7 +705,7 @@ const TravelAgencyDash = () => {
                       <span className="fa-solid fa-temperature-quarter me-2 text-info" />
                       <p className="mb-0 text-body-tertiary me-3">15°C</p>
                       <span className="me-2 fa-solid fa-cloud-bolt text-body-tertiary" />
-                      <p className="mb-0 text-body-tertiary">Stormy</p>
+                      <p className="mb-0 text-body-tertiary">{t("travelAgency.stormy")}</p>
                     </div>
                   </td>
                   <td className="align-middle route pe-5">
@@ -745,7 +749,7 @@ const TravelAgencyDash = () => {
                   </td>
                   <td className="status align-middle text-end">
                     <span className="badge badge-phoenix fs-10 badge-phoenix-warning">
-                      Delayed
+                      {t("travelAgency.delayed")}
                     </span>
                   </td>
                   <td className="align-middle text-end time">
@@ -779,13 +783,13 @@ const TravelAgencyDash = () => {
                       </button>
                       <div className="dropdown-menu dropdown-menu-end">
                         <a className="dropdown-item" href="#!">
-                          Track flight
+                          {t("travelAgency.trackFlight")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Download
+                          {t("travelAgency.download")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Report abuse
+                          {t("travelAgency.reportAbuse")}
                         </a>
                       </div>
                     </div>
@@ -823,7 +827,7 @@ const TravelAgencyDash = () => {
                       <span className="fa-solid fa-temperature-quarter me-2 text-danger" />
                       <p className="mb-0 text-body-tertiary me-3">28°C</p>
                       <span className="me-2 fa-solid fa-sun text-warning" />
-                      <p className="mb-0 text-body-tertiary">Sunny</p>
+                      <p className="mb-0 text-body-tertiary">{t("travelAgency.sunny")}</p>
                     </div>
                   </td>
                   <td className="align-middle route pe-5">
@@ -871,7 +875,7 @@ const TravelAgencyDash = () => {
                   </td>
                   <td className="status align-middle text-end">
                     <span className="badge badge-phoenix fs-10 badge-phoenix-primary">
-                      On Time
+                      {t("travelAgency.onTime")}
                     </span>
                   </td>
                   <td className="align-middle text-end time">
@@ -905,13 +909,13 @@ const TravelAgencyDash = () => {
                       </button>
                       <div className="dropdown-menu dropdown-menu-end">
                         <a className="dropdown-item" href="#!">
-                          Track flight
+                          {t("travelAgency.trackFlight")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Download
+                          {t("travelAgency.download")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Report abuse
+                          {t("travelAgency.reportAbuse")}
                         </a>
                       </div>
                     </div>
@@ -945,7 +949,7 @@ const TravelAgencyDash = () => {
                       <span className="fa-solid fa-temperature-quarter me-2 text-info" />
                       <p className="mb-0 text-body-tertiary me-3">22°C</p>
                       <span className="me-2 fa-solid fa-wind text-info" />
-                      <p className="mb-0 text-body-tertiary">Wind</p>
+                      <p className="mb-0 text-body-tertiary">{t("travelAgency.wind")}</p>
                     </div>
                   </td>
                   <td className="align-middle route pe-5">
@@ -989,7 +993,7 @@ const TravelAgencyDash = () => {
                   </td>
                   <td className="status align-middle text-end">
                     <span className="badge badge-phoenix fs-10 badge-phoenix-success">
-                      Departure
+                      {t("travelAgency.departure")}
                     </span>
                   </td>
                   <td className="align-middle text-end time">
@@ -1023,13 +1027,13 @@ const TravelAgencyDash = () => {
                       </button>
                       <div className="dropdown-menu dropdown-menu-end">
                         <a className="dropdown-item" href="#!">
-                          Track flight
+                          {t("travelAgency.trackFlight")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Download
+                          {t("travelAgency.download")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Report abuse
+                          {t("travelAgency.reportAbuse")}
                         </a>
                       </div>
                     </div>
@@ -1067,7 +1071,7 @@ const TravelAgencyDash = () => {
                       <span className="fa-solid fa-temperature-quarter me-2 text-info" />
                       <p className="mb-0 text-body-tertiary me-3">5°C</p>
                       <span className="me-2 fa-solid fa-cloud-showers-heavy text-danger" />
-                      <p className="mb-0 text-body-tertiary">Heavy rain</p>
+                      <p className="mb-0 text-body-tertiary">{t("travelAgency.heavyRain")}</p>
                     </div>
                   </td>
                   <td className="align-middle route pe-5">
@@ -1113,7 +1117,7 @@ const TravelAgencyDash = () => {
                   </td>
                   <td className="status align-middle text-end">
                     <span className="badge badge-phoenix fs-10 badge-phoenix-danger">
-                      Cancelled
+                      {t("travelAgency.cancelled")}
                     </span>
                   </td>
                   <td className="align-middle text-end time">
@@ -1147,13 +1151,13 @@ const TravelAgencyDash = () => {
                       </button>
                       <div className="dropdown-menu dropdown-menu-end">
                         <a className="dropdown-item" href="#!">
-                          Track flight
+                          {t("travelAgency.trackFlight")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Download
+                          {t("travelAgency.download")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Report abuse
+                          {t("travelAgency.reportAbuse")}
                         </a>
                       </div>
                     </div>
@@ -1191,7 +1195,7 @@ const TravelAgencyDash = () => {
                       <span className="fa-solid fa-temperature-quarter me-2 text-info" />
                       <p className="mb-0 text-body-tertiary me-3">5°C</p>
                       <span className="me-2 fa-solid fa-cloud-showers-heavy text-danger" />
-                      <p className="mb-0 text-body-tertiary">Heavy rain</p>
+                      <p className="mb-0 text-body-tertiary">{t("travelAgency.heavyRain")}</p>
                     </div>
                   </td>
                   <td className="align-middle route pe-5">
@@ -1239,7 +1243,7 @@ const TravelAgencyDash = () => {
                   </td>
                   <td className="status align-middle text-end">
                     <span className="badge badge-phoenix fs-10 badge-phoenix-primary">
-                      On Time
+                      {t("travelAgency.onTime")}
                     </span>
                   </td>
                   <td className="align-middle text-end time">
@@ -1273,13 +1277,13 @@ const TravelAgencyDash = () => {
                       </button>
                       <div className="dropdown-menu dropdown-menu-end">
                         <a className="dropdown-item" href="#!">
-                          Track flight
+                          {t("travelAgency.trackFlight")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Download
+                          {t("travelAgency.download")}
                         </a>
                         <a className="dropdown-item" href="#!">
-                          Report abuse
+                          {t("travelAgency.reportAbuse")}
                         </a>
                       </div>
                     </div>

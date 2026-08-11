@@ -1,15 +1,16 @@
 import { useReducer, useEffect, useState, useMemo } from "react";
 import { NavLink, useSearchParams } from "react-router-dom";
 import axiosClient from "../axios-client";
+import { useTranslation } from "react-i18next";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
-const VALIDATION_CONFIG = {
-  pending: { label: "En attente", badge: "warning", icon: "fa-clock" },
-  approved: { label: "Approuvé", badge: "success", icon: "fa-check-circle" },
-  rejected: { label: "Rejeté", badge: "danger", icon: "fa-times-circle" },
-  expired: { label: "Expiré", badge: "secondary", icon: "fa-calendar-xmark" },
-};
+const getValidationConfig = (t) => ({
+  pending: { label: t("documents.statusPending"), badge: "warning", icon: "fa-clock" },
+  approved: { label: t("documents.statusApproved"), badge: "success", icon: "fa-check-circle" },
+  rejected: { label: t("documents.statusRejected"), badge: "danger", icon: "fa-times-circle" },
+  expired: { label: t("documents.statusExpired"), badge: "secondary", icon: "fa-calendar-xmark" },
+});
 
 const FORMAT_CONFIG = {
   pdf: { icon: "fa-file-pdf", color: "#dc3545" },
@@ -110,6 +111,7 @@ const KpiCard = ({ label, value, badge, icon, sub }) => (
 
 // Modal de validation / rejet
 const ValidateModal = ({ doc, onDone, onClose }) => {
+  const { t } = useTranslation();
   const [action, setAction] = useState("approve");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -117,7 +119,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
 
   const submit = () => {
     if (action === "reject" && !reason.trim()) {
-      setError("Le motif de rejet est obligatoire.");
+      setError(t("documents.rejectReasonRequired"));
       return;
     }
     setLoading(true);
@@ -128,7 +130,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
       })
       .then(({ data }) => onDone(data))
       .catch((err) =>
-        setError(err.response?.data?.detail ?? "Erreur lors de la validation."),
+        setError(err.response?.data?.detail ?? t("documents.validationError")),
       )
       .finally(() => setLoading(false));
   };
@@ -143,7 +145,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
           <div className="modal-header">
             <h5 className="modal-title">
               <span className="fas fa-shield-check me-2 text-primary" />
-              Valider le document
+              {t("documents.validateTitle")}
             </h5>
             <button className="btn-close" onClick={onClose} />
           </div>
@@ -173,7 +175,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
                 }}
               >
                 <span className="fas fa-check-circle fs-5 text-success d-block mb-1" />
-                <span className="fw-semibold fs-9">Approuver</span>
+                <span className="fw-semibold fs-9">{t("documents.approve")}</span>
               </div>
               <div
                 className={`flex-grow-1 p-3 rounded-2 border text-center ${action === "reject" ? "border-danger bg-danger-subtle" : "border-translucent"}`}
@@ -184,7 +186,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
                 }}
               >
                 <span className="fas fa-times-circle fs-5 text-danger d-block mb-1" />
-                <span className="fw-semibold fs-9">Rejeter</span>
+                <span className="fw-semibold fs-9">{t("documents.reject")}</span>
               </div>
             </div>
 
@@ -192,12 +194,12 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
             {action === "reject" && (
               <div className="mb-3">
                 <label className="form-label fs-9 fw-semibold">
-                  Motif de rejet <span className="text-danger">*</span>
+                  {t("documents.rejectionReason")} <span className="text-danger">*</span>
                 </label>
                 <textarea
                   className={`form-control fs-9 ${error ? "is-invalid" : ""}`}
                   rows={3}
-                  placeholder="Ex : Document illisible, informations incomplètes…"
+                  placeholder={t("documents.reasonPlaceholder")}
                   value={reason}
                   onChange={(e) => {
                     setReason(e.target.value);
@@ -217,7 +219,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Annuler
+              {t("documents.cancel")}
             </button>
             <button
               className={`btn btn-${action === "approve" ? "success" : "danger"}`}
@@ -227,12 +229,12 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
-                  Traitement…
+                  {t("documents.processing")}
                 </>
               ) : action === "approve" ? (
-                "Confirmer l'approbation"
+                t("documents.confirmApprove")
               ) : (
-                "Confirmer le rejet"
+                t("documents.confirmReject")
               )}
             </button>
           </div>
@@ -244,8 +246,10 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
 
 // Panneau de détail latéral
 const DetailPanel = ({ doc, onValidate, onClose }) => {
+  const { t } = useTranslation();
   if (!doc) return null;
   const fmt = FORMAT_CONFIG[doc.file_format] ?? FORMAT_CONFIG.other;
+  const VALIDATION_CONFIG = getValidationConfig(t);
   const val =
     VALIDATION_CONFIG[doc.validation_status] ?? VALIDATION_CONFIG.pending;
   const expiring =
@@ -293,13 +297,13 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
           {expiring && (
             <span className="badge badge-phoenix badge-phoenix-warning">
               <span className="fas fa-triangle-exclamation me-1" />
-              Expire dans {doc.days_until_expiry}j
+              {t("documents.expiresIn", { count: doc.days_until_expiry })}
             </span>
           )}
           {doc.is_expired && (
             <span className="badge badge-phoenix badge-phoenix-danger">
               <span className="fas fa-calendar-xmark me-1" />
-              Expiré
+              {t("documents.statusExpired")}
             </span>
           )}
         </div>
@@ -307,30 +311,30 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
         {/* Expédition liée */}
         <div className="mb-4">
           <p className="fs-10 fw-semibold text-body-tertiary text-uppercase mb-2">
-            Expédition
+            {t("documents.shipment")}
           </p>
           <NavLink
             className="d-flex align-items-center gap-2 text-primary fw-semibold fs-9"
             to={`/expeditions/${doc.shipment}`}
           >
             <span className="fas fa-folder-open me-1" />
-            Voir le dossier
+            {t("documents.viewFile")}
           </NavLink>
         </div>
 
         {/* Métadonnées */}
         <div className="mb-4">
           <p className="fs-10 fw-semibold text-body-tertiary text-uppercase mb-2">
-            Informations
+            {t("documents.info")}
           </p>
           {[
-            ["Référence", doc.reference_number],
-            ["Fichier", doc.original_filename],
-            ["Taille", fmtSize(doc.file_size_bytes)],
-            ["Autorité", doc.issuing_authority],
-            ["Date d'émission", fmtDate(doc.issue_date)],
-            ["Uploadé par", doc.uploaded_by_name],
-            ["Uploadé le", fmtDate(doc.uploaded_at)],
+            [t("documents.reference"), doc.reference_number],
+            [t("documents.file"), doc.original_filename],
+            [t("documents.size"), fmtSize(doc.file_size_bytes)],
+            [t("documents.authority"), doc.issuing_authority],
+            [t("documents.issueDate"), fmtDate(doc.issue_date)],
+            [t("documents.uploadedBy"), doc.uploaded_by_name],
+            [t("documents.uploadedAt"), fmtDate(doc.uploaded_at)],
           ].map(([label, value]) =>
             value ? (
               <div
@@ -353,7 +357,7 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
         {doc.expiry_date && (
           <div className="mb-4">
             <p className="fs-10 fw-semibold text-body-tertiary text-uppercase mb-2">
-              Expiration
+              {t("documents.expiration")}
             </p>
             <div
               className={`d-flex align-items-center gap-2 p-2 rounded-2 ${doc.is_expired ? "bg-danger-subtle" : expiring ? "bg-warning-subtle" : "bg-body-tertiary"}`}
@@ -367,7 +371,7 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
                 {fmtDate(doc.expiry_date)}
                 {!doc.is_expired && doc.days_until_expiry >= 0 && (
                   <span className="ms-2 fw-normal text-body-tertiary">
-                    ({doc.days_until_expiry}j restants)
+                    ({t("documents.daysLeft", { count: doc.days_until_expiry })})
                   </span>
                 )}
               </span>
@@ -379,12 +383,14 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
         {doc.validation_status !== "pending" && (
           <div className="mb-4">
             <p className="fs-10 fw-semibold text-body-tertiary text-uppercase mb-2">
-              Validation
+              {t("documents.validation")}
             </p>
             {doc.validated_by && (
               <p className="fs-9 mb-1">
-                Par <strong>{doc.validated_by?.full_name ?? "—"}</strong> le{" "}
-                {fmtDate(doc.validated_at)}
+                {t("documents.validatedBy", {
+                  name: doc.validated_by?.full_name ?? "—",
+                  date: fmtDate(doc.validated_at),
+                })}
               </p>
             )}
             {doc.rejection_reason && (
@@ -400,7 +406,7 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
         {doc.notes && (
           <div className="mb-4">
             <p className="fs-10 fw-semibold text-body-tertiary text-uppercase mb-2">
-              Notes
+              {t("documents.notes")}
             </p>
             <p className="fs-9 text-body-tertiary mb-0">{doc.notes}</p>
           </div>
@@ -416,7 +422,7 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
               rel="noreferrer"
             >
               <span className="fas fa-download me-2" />
-              Télécharger
+              {t("documents.download")}
             </a>
           )}
           {doc.validation_status === "pending" && (
@@ -425,7 +431,7 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
               onClick={() => onValidate(doc)}
             >
               <span className="fas fa-shield-check me-2" />
-              Valider / Rejeter
+              {t("documents.validateReject")}
             </button>
           )}
           <NavLink
@@ -433,7 +439,7 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
             to={`/expeditions/${doc.shipment}`}
           >
             <span className="fas fa-folder-open me-2" />
-            Ouvrir l'expédition
+            {t("documents.openShipment")}
           </NavLink>
         </div>
       </div>
@@ -444,6 +450,8 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
 // ─── COMPOSANT PRINCIPAL ───────────────────────────────────
 
 export default function DocumentsPage() {
+  const { t } = useTranslation();
+  const VALIDATION_CONFIG = getValidationConfig(t);
   const [searchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, {
     ...init,
@@ -485,7 +493,7 @@ export default function DocumentsPage() {
         })
         .catch((err) => {
           if (!cancelled)
-            setError(err.response?.data?.detail ?? "Erreur de chargement.");
+            setError(err.response?.data?.detail ?? t("documents.loadError"));
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -561,12 +569,12 @@ export default function DocumentsPage() {
         {/* EN-TÊTE */}
         <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
           <div>
-            <h2 className="mb-1">Documents</h2>
+            <h2 className="mb-1">{t("documents.title")}</h2>
             <p className="text-body-tertiary mb-0 fs-9">
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
-                  Chargement…
+                  {t("documents.loading")}
                 </>
               ) : (
                 <>
@@ -578,7 +586,7 @@ export default function DocumentsPage() {
                   className="btn btn-link p-0 ms-2 fs-9 text-danger"
                   onClick={() => dispatch({ type: "RESET" })}
                 >
-                  Réinitialiser
+                  {t("documents.reset")}
                 </button>
               )}
             </p>
@@ -589,39 +597,39 @@ export default function DocumentsPage() {
             data-bs-target="#uploadDocumentModal"
           >
             <span className="fas fa-upload me-2" />
-            Uploader un document
+            {t("documents.upload")}
           </button>
         </div>
 
         {/* KPIs */}
         <div className="row g-3 mb-4">
           <KpiCard
-            label="Total"
+            label={t("documents.kpiTotal")}
             value={kpis.total}
             badge="primary"
             icon="fa-file-alt"
-            sub="Tous les documents"
+            sub={t("documents.kpiTotalSub")}
           />
           <KpiCard
-            label="En attente"
+            label={t("documents.kpiPending")}
             value={kpis.pending}
             badge="warning"
             icon="fa-clock"
-            sub="À valider"
+            sub={t("documents.kpiPendingSub")}
           />
           <KpiCard
-            label="Approuvés"
+            label={t("documents.kpiApproved")}
             value={kpis.approved}
             badge="success"
             icon="fa-check-circle"
-            sub="Validés"
+            sub={t("documents.kpiApprovedSub")}
           />
           <KpiCard
-            label="Expirés / soon"
+            label={t("documents.kpiExpiring")}
             value={kpis.expiring}
             badge="danger"
             icon="fa-triangle-exclamation"
-            sub="Action requise"
+            sub={t("documents.kpiExpiringSub")}
           />
         </div>
 
@@ -631,9 +639,18 @@ export default function DocumentsPage() {
             <span className="fas fa-triangle-exclamation text-danger fs-6 flex-shrink-0 mt-1" />
             <div className="flex-grow-1 min-w-0">
               <p className="mb-1 fw-semibold fs-9">
-                {expiringDocs.length} document
-                {expiringDocs.length > 1 ? "s" : ""} nécessite
-                {expiringDocs.length > 1 ? "nt" : ""} une attention immédiate
+                {expiringDocs.length}{" "}
+                {t(
+                  expiringDocs.length > 1
+                    ? "documents.alertDocsPlural"
+                    : "documents.alertDocs",
+                )}{" "}
+                {t(
+                  expiringDocs.length > 1
+                    ? "documents.alertRequirePlural"
+                    : "documents.alertRequire",
+                )}{" "}
+                {t("documents.alertAttention")}
               </p>
               <div className="d-flex flex-wrap gap-2">
                 {expiringDocs.slice(0, 5).map((d) => (
@@ -643,12 +660,14 @@ export default function DocumentsPage() {
                     onClick={() => setDetail(d)}
                   >
                     {d.document_type_name}
-                    {d.is_expired ? " · Expiré" : ` · ${d.days_until_expiry}j`}
+                    {d.is_expired
+                      ? ` · ${t("documents.statusExpired")}`
+                      : ` · ${d.days_until_expiry}j`}
                   </button>
                 ))}
                 {expiringDocs.length > 5 && (
                   <span className="fs-10 text-danger align-self-center">
-                    +{expiringDocs.length - 5} autres
+                    +{expiringDocs.length - 5} {t("documents.others")}
                   </span>
                 )}
               </div>
@@ -662,7 +681,7 @@ export default function DocumentsPage() {
             <input
               className="form-control search-input"
               type="search"
-              placeholder="Titre, référence, autorité émettrice…"
+              placeholder={t("documents.searchPlaceholder")}
               value={search}
               onChange={(e) => f("search", e.target.value)}
             />
@@ -673,7 +692,7 @@ export default function DocumentsPage() {
             onClick={() => dispatch({ type: "TOGGLE_FILTERS" })}
           >
             <span className="fas fa-sliders-h me-2" />
-            Filtres
+            {t("documents.filters")}
             {hasFilters && (
               <span className="ms-2 badge badge-phoenix badge-phoenix-danger">
                 !
@@ -689,14 +708,14 @@ export default function DocumentsPage() {
               <div className="row g-3 align-items-end">
                 <div className="col-12 col-sm-6 col-lg-3">
                   <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
-                    STATUT
+                    {t("documents.status")}
                   </label>
                   <select
                     className="form-select form-select-sm"
                     value={status}
                     onChange={(e) => f("status", e.target.value)}
                   >
-                    <option value="">Tous les statuts</option>
+                    <option value="">{t("documents.allStatuses")}</option>
                     {Object.entries(VALIDATION_CONFIG).map(([v, { label }]) => (
                       <option key={v} value={v}>
                         {label}
@@ -706,14 +725,14 @@ export default function DocumentsPage() {
                 </div>
                 <div className="col-12 col-sm-6 col-lg-3">
                   <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
-                    TYPE
+                    {t("documents.type")}
                   </label>
                   <select
                     className="form-select form-select-sm"
                     value={doc_type}
                     onChange={(e) => f("doc_type", e.target.value)}
                   >
-                    <option value="">Tous les types</option>
+                    <option value="">{t("documents.allTypes")}</option>
                     {docTypes.map((dt) => (
                       <option key={dt.id} value={dt.id}>
                         {dt.name}
@@ -723,12 +742,12 @@ export default function DocumentsPage() {
                 </div>
                 <div className="col-12 col-sm-6 col-lg-4">
                   <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
-                    EXPÉDITION
+                    {t("documents.shipment")}
                   </label>
                   <input
                     type="text"
                     className="form-control form-control-sm"
-                    placeholder="Référence expédition (ex: TFA-2025-00042)"
+                    placeholder={t("documents.shipmentPlaceholder")}
                     value={shipment}
                     onChange={(e) => f("shipment", e.target.value)}
                   />
@@ -739,7 +758,7 @@ export default function DocumentsPage() {
                     onClick={() => dispatch({ type: "RESET" })}
                   >
                     <span className="fas fa-times me-1" />
-                    Réinitialiser
+                    {t("documents.reset")}
                   </button>
                 </div>
               </div>
@@ -763,25 +782,25 @@ export default function DocumentsPage() {
                 <thead>
                   <tr>
                     <th className="align-middle ps-3" style={{ minWidth: 220 }}>
-                      DOCUMENT
+                      {t("documents.document")}
                     </th>
                     <th className="align-middle" style={{ minWidth: 160 }}>
-                      EXPÉDITION
+                      {t("documents.shipment")}
                     </th>
                     <th className="align-middle" style={{ minWidth: 140 }}>
-                      STATUT
+                      {t("documents.status")}
                     </th>
                     <th className="align-middle" style={{ minWidth: 110 }}>
-                      ÉMISSION
+                      {t("documents.issue")}
                     </th>
                     <th className="align-middle" style={{ minWidth: 130 }}>
-                      EXPIRATION
+                      {t("documents.expiration")}
                     </th>
                     <th className="align-middle" style={{ minWidth: 150 }}>
-                      UPLOADÉ PAR
+                      {t("documents.uploadedBy")}
                     </th>
                     <th className="align-middle" style={{ minWidth: 80 }}>
-                      TAILLE
+                      {t("documents.size")}
                     </th>
                     <th className="align-middle pe-3" style={{ width: 48 }} />
                   </tr>
@@ -812,8 +831,8 @@ export default function DocumentsPage() {
                       >
                         <span className="fas fa-file-circle-xmark fs-4 d-block mb-2 opacity-50" />
                         {hasFilters
-                          ? "Aucun document ne correspond à vos critères."
-                          : "Aucun document pour le moment."}
+                          ? t("documents.noResult")
+                          : t("documents.noDocuments")}
                       </td>
                     </tr>
                   ) : (
@@ -874,7 +893,7 @@ export default function DocumentsPage() {
                               onClick={(e) => e.stopPropagation()}
                             >
                               <span className="fas fa-folder me-1 opacity-50" />
-                              Voir dossier
+                              {t("documents.viewFolder")}
                             </NavLink>
                             {d.reference_number && (
                               <p className="mb-0 fs-10 text-body-tertiary">
@@ -919,12 +938,12 @@ export default function DocumentsPage() {
                                   <p
                                     className={`mb-0 fs-10 ${expiryClass(d.days_until_expiry, false)}`}
                                   >
-                                    {d.days_until_expiry}j restants
+                                    {t("documents.daysLeft", { count: d.days_until_expiry })}
                                   </p>
                                 )}
                                 {isExpired && (
                                   <p className="mb-0 fs-10 text-danger">
-                                    Expiré
+                                    {t("documents.statusExpired")}
                                   </p>
                                 )}
                               </div>
@@ -970,7 +989,7 @@ export default function DocumentsPage() {
                                 onClick={() => setDetail(d)}
                               >
                                 <span className="fas fa-eye me-2 text-body-tertiary" />
-                                Voir les détails
+                                {t("documents.viewDetails")}
                               </button>
                               {d.file && (
                                 <a
@@ -980,7 +999,7 @@ export default function DocumentsPage() {
                                   rel="noreferrer"
                                 >
                                   <span className="fas fa-download me-2 text-body-tertiary" />
-                                  Télécharger
+                                  {t("documents.download")}
                                 </a>
                               )}
                               {d.validation_status === "pending" && (
@@ -989,7 +1008,7 @@ export default function DocumentsPage() {
                                   onClick={() => setValidating(d)}
                                 >
                                   <span className="fas fa-shield-check me-2 text-success" />
-                                  Valider / Rejeter
+                                  {t("documents.validateReject")}
                                 </button>
                               )}
                               <NavLink
@@ -997,7 +1016,7 @@ export default function DocumentsPage() {
                                 to={`/expeditions/${d.shipment}`}
                               >
                                 <span className="fas fa-folder-open me-2 text-body-tertiary" />
-                                Ouvrir l'expédition
+                                {t("documents.openShipment")}
                               </NavLink>
                             </div>
                           </td>
@@ -1014,9 +1033,11 @@ export default function DocumentsPage() {
           {!loading && documents.length > PAGE_SIZE && (
             <div className="card-footer d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
               <p className="mb-0 fs-9 text-body-tertiary">
-                Affichage de <strong>{(page - 1) * PAGE_SIZE + 1}</strong> à{" "}
-                <strong>{Math.min(page * PAGE_SIZE, documents.length)}</strong>{" "}
-                sur <strong>{documents.length}</strong> documents
+                {t("documents.displayRange", {
+                  from: (page - 1) * PAGE_SIZE + 1,
+                  to: Math.min(page * PAGE_SIZE, documents.length),
+                  total: documents.length,
+                })}
               </p>
               <div className="d-flex align-items-center gap-1">
                 <button

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import markerIcon from "../../assets/img/media.png";
+import { useTranslation } from "react-i18next";
 import "../../assets/css/WorldMap.css";
 
 // === CONFIGURATION ===
@@ -31,12 +32,12 @@ const THEME_FILTERS = {
 };
 
 // === EXPÉDITIONS ACTIVES TRADEFLOW (données démo) ===
-const DEFAULT_LOCATIONS = [
+const getDefaultLocations = (t) => [
   // Port de Cotonou (destination principale)
   {
     name: "Port de Cotonou",
     location: "Bénin",
-    shipmentId: "Hub principal",
+    shipmentId: t("dashboard.mapHub"),
     status: "hub",
     lat: 6.3654,
     long: 2.4183,
@@ -46,7 +47,7 @@ const DEFAULT_LOCATIONS = [
     name: "MV Ever Given",
     location: "Océan Atlantique",
     shipmentId: "TFA-2025-0045",
-    status: "En mer",
+    status: t("dashboard.mapAtSea"),
     lat: 14.5,
     long: -18.0,
   },
@@ -54,7 +55,7 @@ const DEFAULT_LOCATIONS = [
     name: "MV CMA CGM Marco Polo",
     location: "Golfe de Guinée",
     shipmentId: "TFA-2025-0038",
-    status: "En mer",
+    status: t("dashboard.mapAtSea"),
     lat: 3.5,
     long: 2.8,
   },
@@ -63,7 +64,7 @@ const DEFAULT_LOCATIONS = [
     name: "Port de Shanghai",
     location: "Chine",
     shipmentId: "TFA-2025-0045 / 0038",
-    status: "Départ",
+    status: t("dashboard.mapDeparture"),
     lat: 31.2304,
     long: 121.4737,
   },
@@ -71,7 +72,7 @@ const DEFAULT_LOCATIONS = [
     name: "Port de Marseille",
     location: "France",
     shipmentId: "TFA-2025-0044",
-    status: "En transit",
+    status: t("dashboard.mapInTransit"),
     lat: 43.2965,
     long: 5.3698,
   },
@@ -79,7 +80,7 @@ const DEFAULT_LOCATIONS = [
     name: "Port de Mumbai",
     location: "Inde",
     shipmentId: "TFA-2025-0041",
-    status: "Au port",
+    status: t("dashboard.mapAtPort"),
     lat: 18.9220,
     long: 72.8347,
   },
@@ -87,7 +88,7 @@ const DEFAULT_LOCATIONS = [
     name: "Port d'Istanbul",
     location: "Turquie",
     shipmentId: "TFA-2025-0042",
-    status: "Livré",
+    status: t("dashboard.mapDelivered"),
     lat: 41.0082,
     long: 28.9784,
   },
@@ -95,7 +96,7 @@ const DEFAULT_LOCATIONS = [
     name: "Port de Dubaï",
     location: "Émirats Arabes Unis",
     shipmentId: "TFA-2025-0039",
-    status: "Livré",
+    status: t("dashboard.mapDelivered"),
     lat: 25.2048,
     long: 55.2708,
   },
@@ -103,7 +104,7 @@ const DEFAULT_LOCATIONS = [
     name: "Aéroport CDG",
     location: "France",
     shipmentId: "TFA-2025-0043",
-    status: "Bloquée",
+    status: t("dashboard.mapBlocked"),
     lat: 49.0097,
     long: 2.5479,
   },
@@ -111,24 +112,24 @@ const DEFAULT_LOCATIONS = [
   {
     name: "Port de Lomé",
     location: "Togo",
-    shipmentId: "Partenaire ECOWAS",
-    status: "Partenaire",
+    shipmentId: t("dashboard.mapEcoPartner"),
+    status: t("dashboard.mapPartner"),
     lat: 6.1375,
     long: 1.2123,
   },
   {
     name: "Port d'Abidjan",
     location: "Côte d'Ivoire",
-    shipmentId: "Partenaire ECOWAS",
-    status: "Partenaire",
+    shipmentId: t("dashboard.mapEcoPartner"),
+    status: t("dashboard.mapPartner"),
     lat: 5.3600,
     long: -4.0083,
   },
   {
     name: "Port de Dakar",
     location: "Sénégal",
-    shipmentId: "Partenaire ECOWAS",
-    status: "Partenaire",
+    shipmentId: t("dashboard.mapEcoPartner"),
+    status: t("dashboard.mapPartner"),
     lat: 14.6928,
     long: -17.4467,
   },
@@ -148,20 +149,25 @@ const getClusterSizeClass = (markerCount) => {
   return CLUSTER_SIZES.SMALL.class;
 };
 
-const createPopupContent = ({ name, location, shipmentId, status }) => `
+const createPopupContent = (t, { name, location, shipmentId, status }) => `
   <h6 class="mb-1">${name}</h6>
   <p class="m-0 text-body-quaternary mb-1">${location}</p>
-  ${shipmentId ? `<p class="m-0 fs-10"><strong>Dossier :</strong> ${shipmentId}</p>` : ""}
+  ${shipmentId ? `<p class="m-0 fs-10"><strong>${t("dashboard.mapDossier")} :</strong> ${shipmentId}</p>` : ""}
   ${status ? `<span class="badge badge-phoenix badge-phoenix-info fs-10 mt-1">${status}</span>` : ""}
 `;
 
 // === COMPOSANT ===
 const WorldMap = ({
-  locations = DEFAULT_LOCATIONS,
+  locations: locationsProp,
   config = {},
   containerClass = "col-12 col-xl-6",
   minHeight = 300,
 }) => {
+  const { t } = useTranslation();
+  const locations = useMemo(
+    () => locationsProp ?? getDefaultLocations(t),
+    [locationsProp, t]
+  );
   const mapInstanceRef = useRef(null);
   const tileLayerRef = useRef(null);
   const mapConfig = { ...DEFAULT_CONFIG, ...config };
@@ -206,7 +212,7 @@ const WorldMap = ({
       const marker = L.marker([location.lat, location.long], {
         icon: markerIconInstance,
       });
-      const popupContent = createPopupContent(location);
+      const popupContent = createPopupContent(t, location);
       marker.bindPopup(
         L.popup({ minWidth: mapConfig.popupMinWidth }).setContent(popupContent)
       );
@@ -228,7 +234,7 @@ const WorldMap = ({
       mapInstanceRef.current?.remove();
       mapInstanceRef.current = null;
     };
-  }, [locations, mapConfig]);
+  }, [locations, mapConfig, t]);
 
   return (
     <div className={containerClass}>

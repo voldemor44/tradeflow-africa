@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
+import { useTranslation } from "react-i18next";
 
 const flightsData = [
   {
@@ -47,6 +48,7 @@ const flightsData = [
 ];
 
 const FligthSlider = () => {
+  const { t } = useTranslation();
   return (
     <div className="position-absolute top-0 w-100 mt-3 mt-md-5 px-3 px-md-5 px-xl-7">
       <div
@@ -56,7 +58,7 @@ const FligthSlider = () => {
         <div className="h-100 px-3 d-flex align-items-center bg-danger-subtle position-relative z-5">
           <span className="fa-solid fa-circle text-danger me-md-2" />
           <h3 className="mb-0 fw-bold text-nowrap d-none d-md-block">
-            Live Tracking
+            {t("travelAgency.liveTracking")}
           </h3>
         </div>
         <div className="swiper-theme-container w-100">

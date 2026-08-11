@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
+import { useTranslation } from "react-i18next";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ const createMarkerEl = (shipment, isSelected) => {
   return el;
 };
 
-const createPopupHTML = (s) => {
+const createPopupHTML = (s, t) => {
   const fmtDate = (iso) => {
     if (!iso) return "—";
     const [y, m, d] = iso.split("-");
@@ -124,7 +125,7 @@ const createPopupHTML = (s) => {
           ? `
         <div style="font-size:11px; color:var(--phoenix-body-tertiary-color);">
           <i class="fas fa-ship" style="margin-right:4px;"></i>${s.vessel.name}
-          ${s.vessel.speed > 0 ? "· " + s.vessel.speed + " kn" : "· À l'arrêt"}
+          ${s.vessel.speed > 0 ? "· " + s.vessel.speed + " kn" : "· " + t("map.atStop")}
         </div>`
           : ""
       }
@@ -140,8 +141,8 @@ const createPopupHTML = (s) => {
         <div style="height:100%; width:${(s.vessel ?? s.road)?.progress ?? 0}%; background:${s.status === "on_hold" ? "#dc3545" : "#0dcaf0"}; border-radius:4px;"></div>
       </div>
       <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:10px; color:var(--phoenix-body-tertiary-color);">
-        <span>Progression : <strong>${(s.vessel ?? s.road)?.progress ?? 0}%</strong></span>
-        <span>ETA : <strong>${fmtDate(s.estimated_arrival)}</strong></span>
+        <span>${t("map.progress")} : <strong>${(s.vessel ?? s.road)?.progress ?? 0}%</strong></span>
+        <span>${t("map.eta")} : <strong>${fmtDate(s.estimated_arrival)}</strong></span>
       </div>
     </div>
   `;
@@ -155,6 +156,7 @@ const TradeFlowMap = ({
   onSelect = () => {},
   showControls = true,
 }) => {
+  const { t } = useTranslation();
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -261,7 +263,7 @@ const TradeFlowMap = ({
           onSelect(s);
           popupRef.current
             .setLngLat(coords)
-            .setHTML(createPopupHTML(s))
+            .setHTML(createPopupHTML(s, t))
             .addTo(map);
         });
 
@@ -308,7 +310,7 @@ const TradeFlowMap = ({
     } else {
       map.once("load", addContent);
     }
-  }, [shipments, selectedId]);
+  }, [shipments, selectedId, onSelect, t]);
 
   // ── Fly to sélection ───────────────────────────────────
   useEffect(() => {
@@ -333,13 +335,13 @@ const TradeFlowMap = ({
     });
 
   const CONTROLS = [
-    { onClick: zoomIn, icon: "fa-plus", title: "Zoom +" },
-    { onClick: zoomOut, icon: "fa-minus", title: "Zoom -" },
-    { onClick: resetView, icon: "fa-earth-africa", title: "Vue globale" },
+    { onClick: zoomIn, icon: "fa-plus", title: t("map.zoomIn") },
+    { onClick: zoomOut, icon: "fa-minus", title: t("map.zoomOut") },
+    { onClick: resetView, icon: "fa-earth-africa", title: t("map.globalView") },
     {
       onClick: fullscreen,
       icon: "fa-up-right-and-down-left-from-center",
-      title: "Plein écran",
+      title: t("map.fullscreen"),
     },
   ];
 
@@ -361,7 +363,7 @@ const TradeFlowMap = ({
           borderRadius: 8,
           overflow: "hidden",
         }}
-        aria-label="Carte de suivi des expéditions TradeFlow"
+        aria-label={t("map.mapAriaLabel")}
       />
 
       {showControls && (

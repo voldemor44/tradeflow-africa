@@ -2,40 +2,41 @@ import { useState, useEffect, useMemo } from "react";
 import { NavLink } from "react-router-dom";
 import axiosClient from "../axios-client";
 import TradeFlowMap from "../components/TradeFlowMap";
+import { useTranslation } from "react-i18next";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
-const MODE_CONFIG = {
-  sea: { label: "Maritime", icon: "fa-ship", badge: "info", color: "#0dcaf0" },
+const getModeConfig = (t) => ({
+  sea: { label: t("expeditions.modeSea"), icon: "fa-ship", badge: "info", color: "#0dcaf0" },
   air: {
-    label: "Aérien",
+    label: t("expeditions.modeAir"),
     icon: "fa-plane",
     badge: "primary",
     color: "#0d6efd",
   },
   road: {
-    label: "Routier",
+    label: t("expeditions.modeRoad"),
     icon: "fa-truck",
     badge: "warning",
     color: "#ffc107",
   },
   multi: {
-    label: "Multimodal",
+    label: t("expeditions.modeMulti"),
     icon: "fa-route",
     badge: "success",
     color: "#198754",
   },
-};
+});
 
-const STATUS_CONFIG = {
-  in_transit: { label: "En transit", badge: "primary" },
-  on_vessel: { label: "En mer", badge: "primary" },
-  at_dest_port: { label: "Au port", badge: "warning" },
-  at_origin_port: { label: "Port origine", badge: "warning" },
-  customs: { label: "Dédouanement", badge: "warning" },
-  on_hold: { label: "Bloquée", badge: "danger" },
-  out_for_delivery: { label: "En livraison", badge: "info" },
-};
+const getStatusConfig = (t) => ({
+  in_transit: { label: t("expeditions.statusInTransit"), badge: "primary" },
+  on_vessel: { label: t("expeditions.statusOnVessel"), badge: "primary" },
+  at_dest_port: { label: t("expeditions.statusAtDest"), badge: "warning" },
+  at_origin_port: { label: t("expeditions.statusAtOrigin"), badge: "warning" },
+  customs: { label: t("expeditions.statusCustoms"), badge: "warning" },
+  on_hold: { label: t("expeditions.statusOnHold"), badge: "danger" },
+  out_for_delivery: { label: t("expeditions.statusOutForDelivery"), badge: "info" },
+});
 
 const fmtDate = (iso) => {
   if (!iso) return "—";
@@ -205,6 +206,9 @@ const KpiCard = ({ icon, label, value, badge, sub }) => (
 );
 
 const ShipmentListItem = ({ s, selected, onClick }) => {
+  const { t } = useTranslation();
+  const MODE_CONFIG = getModeConfig(t);
+  const STATUS_CONFIG = getStatusConfig(t);
   const mode = MODE_CONFIG[s.transport_mode] ?? MODE_CONFIG.sea;
   const st = STATUS_CONFIG[s.status] ?? {
     label: s.status_display,
@@ -271,7 +275,9 @@ const ShipmentListItem = ({ s, selected, onClick }) => {
       {pos && (
         <>
           <div className="d-flex justify-content-between mb-1">
-            <span className="fs-10 text-body-tertiary">Progression</span>
+            <span className="fs-10 text-body-tertiary">
+              {t("trackingMap.progression")}
+            </span>
             <span
               className={`fs-10 fw-semibold ${isBlocked ? "text-danger" : "text-body"}`}
             >
@@ -294,7 +300,10 @@ const ShipmentListItem = ({ s, selected, onClick }) => {
 };
 
 const ShipmentDetailPanel = ({ s, onClose }) => {
+  const { t } = useTranslation();
   if (!s) return null;
+  const MODE_CONFIG = getModeConfig(t);
+  const STATUS_CONFIG = getStatusConfig(t);
   const mode = MODE_CONFIG[s.transport_mode] ?? MODE_CONFIG.sea;
   const st = STATUS_CONFIG[s.status] ?? {
     label: s.status_display,
@@ -340,7 +349,7 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
         {/* Route */}
         <div className="mb-3">
           <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-2">
-            Route
+            {t("trackingMap.route")}
           </p>
           <div className="d-flex flex-column gap-2">
             <div className="d-flex align-items-center gap-2">
@@ -373,7 +382,7 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
           <div className="mb-3">
             <div className="d-flex justify-content-between mb-1">
               <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-0">
-                Progression
+                {t("trackingMap.progression")}
               </p>
               <span className="fs-10 fw-bold text-body">{pos.progress}%</span>
             </div>
@@ -391,26 +400,26 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
           <div className="card bg-body-tertiary border-0 mb-3">
             <div className="card-body py-2 px-3">
               <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-2">
-                Navire
+                {t("trackingMap.vessel")}
               </p>
               <p className="mb-1 fs-9 fw-semibold">{s.vessel.name}</p>
               <div className="row g-2">
                 <div className="col-6">
-                  <p className="mb-0 fs-11 text-body-tertiary">Vitesse</p>
+                  <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.speed")}</p>
                   <p className="mb-0 fs-10 fw-semibold">{s.vessel.speed} kn</p>
                 </div>
                 <div className="col-6">
-                  <p className="mb-0 fs-11 text-body-tertiary">Cap</p>
+                  <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.heading")}</p>
                   <p className="mb-0 fs-10 fw-semibold">{s.vessel.heading}°</p>
                 </div>
                 <div className="col-6">
-                  <p className="mb-0 fs-11 text-body-tertiary">Latitude</p>
+                  <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.latitude")}</p>
                   <p className="mb-0 fs-10 fw-semibold">
                     {s.vessel.lat.toFixed(4)}°
                   </p>
                 </div>
                 <div className="col-6">
-                  <p className="mb-0 fs-11 text-body-tertiary">Longitude</p>
+                  <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.longitude")}</p>
                   <p className="mb-0 fs-10 fw-semibold">
                     {s.vessel.lng.toFixed(4)}°
                   </p>
@@ -425,17 +434,17 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
           <div className="card bg-body-tertiary border-0 mb-3">
             <div className="card-body py-2 px-3">
               <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-2">
-                Véhicule
+                {t("trackingMap.vehicle")}
               </p>
               <div className="row g-2">
                 <div className="col-6">
                   <p className="mb-0 fs-11 text-body-tertiary">
-                    Immatriculation
+                    {t("trackingMap.licensePlate")}
                   </p>
                   <p className="mb-0 fs-10 fw-semibold">{s.road.plate}</p>
                 </div>
                 <div className="col-6">
-                  <p className="mb-0 fs-11 text-body-tertiary">Chauffeur</p>
+                  <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.driver")}</p>
                   <p className="mb-0 fs-10 fw-semibold">{s.road.driver}</p>
                 </div>
               </div>
@@ -446,22 +455,22 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
         {/* Dates & Partenaire */}
         <div className="mb-3">
           <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-2">
-            Détails
+            {t("trackingMap.details")}
           </p>
           <div className="d-flex justify-content-between mb-1">
-            <span className="fs-10 text-body-tertiary">ETA</span>
+            <span className="fs-10 text-body-tertiary">{t("trackingMap.eta")}</span>
             <span className="fs-10 fw-semibold">
               {fmtDate(s.estimated_arrival)}
             </span>
           </div>
           <div className="d-flex justify-content-between mb-1">
-            <span className="fs-10 text-body-tertiary">Transitaire</span>
+            <span className="fs-10 text-body-tertiary">{t("trackingMap.forwarder")}</span>
             <span className="fs-10 fw-semibold">
               {s.freight_forwarder_name ?? "—"}
             </span>
           </div>
           <div className="d-flex justify-content-between">
-            <span className="fs-10 text-body-tertiary">Valeur déclarée</span>
+            <span className="fs-10 text-body-tertiary">{t("trackingMap.declaredValue")}</span>
             <span className="fs-10 fw-semibold">
               {Number(s.declared_value).toLocaleString("fr-FR")} {s.currency}
             </span>
@@ -475,7 +484,7 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
             to={`/expeditions/${s.id}`}
           >
             <span className="fas fa-folder-open me-2" />
-            Ouvrir
+            {t("trackingMap.open")}
           </NavLink>
           <NavLink
             className="btn btn-sm btn-phoenix-secondary"
@@ -492,7 +501,10 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
 // ─── CARTE PLACEHOLDER ─────────────────────────────────────
 // En production : remplacer par Leaflet / Mapbox / Google Maps
 
-const MapPlaceholder = ({ shipments, selectedId, onSelect }) => (
+const MapPlaceholder = ({ shipments, selectedId, onSelect }) => {
+  const { t } = useTranslation();
+  const MODE_CONFIG = getModeConfig(t);
+  return (
   <div
     className="position-relative w-100 h-100 bg-body-tertiary overflow-hidden rounded-2"
     style={{
@@ -539,11 +551,11 @@ const MapPlaceholder = ({ shipments, selectedId, onSelect }) => (
     <div className="position-absolute top-50 start-50 translate-middle text-center z-5">
       <div className="card border shadow-sm px-4 py-3">
         <span className="fas fa-map-marked-alt fs-4 text-primary mb-2" />
-        <p className="fs-9 mb-1 fw-semibold">Carte interactive</p>
+        <p className="fs-9 mb-1 fw-semibold">{t("trackingMap.interactiveMap")}</p>
         <p className="fs-10 text-body-tertiary mb-2">
-          Intégrer Leaflet.js ou Mapbox
+          {t("trackingMap.integrateMap")}
           <br />
-          pour afficher les positions réelles
+          {t("trackingMap.toDisplayPositions")}
         </p>
         <code className="fs-11 text-body-tertiary">
           npm install leaflet react-leaflet
@@ -622,7 +634,7 @@ const MapPlaceholder = ({ shipments, selectedId, onSelect }) => (
       <div className="card border shadow-sm">
         <div className="card-body py-2 px-3">
           <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-2">
-            Légende
+            {t("trackingMap.legend")}
           </p>
           {Object.entries(MODE_CONFIG).map(([k, v]) => (
             <div key={k} className="d-flex align-items-center gap-2 mb-1">
@@ -648,17 +660,22 @@ const MapPlaceholder = ({ shipments, selectedId, onSelect }) => (
                 style={{ fontSize: 8 }}
               />
             </div>
-            <span className="fs-11 text-danger fw-semibold">Bloquée</span>
+            <span className="fs-11 text-danger fw-semibold">
+              {t("expeditions.statusOnHold")}
+            </span>
           </div>
         </div>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // ─── COMPOSANT PRINCIPAL ───────────────────────────────────
 
 export default function TrackingMapPage() {
+  const { t } = useTranslation();
+  const MODE_CONFIG = getModeConfig(t);
   const [shipments, setShipments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
@@ -785,9 +802,9 @@ export default function TrackingMapPage() {
       {/* EN-TÊTE */}
       <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
         <div>
-          <h2 className="mb-1">Carte mondiale</h2>
+          <h2 className="mb-1">{t("trackingMap.worldMap")}</h2>
           <p className="text-body-tertiary mb-0 fs-9">
-            Suivi en temps réel des expéditions actives
+            {t("trackingMap.realtimeSubtitle")}
           </p>
         </div>
         <div className="d-flex gap-2">
@@ -796,14 +813,14 @@ export default function TrackingMapPage() {
               className="fas fa-circle fs-11"
               style={{ animation: "pulse 2s infinite" }}
             />
-            En direct
+            {t("trackingMap.live")}
           </span>
           <NavLink
             className="btn btn-phoenix-secondary btn-sm"
             to="/expeditions"
           >
             <span className="fas fa-list me-2" />
-            Liste des expéditions
+            {t("trackingMap.listExpeditions")}
           </NavLink>
         </div>
       </div>
@@ -812,31 +829,31 @@ export default function TrackingMapPage() {
       <div className="row g-3 mb-4">
         <KpiCard
           icon="fa-boxes-stacked"
-          label="Expéditions actives"
+          label={t("trackingMap.activeShipments")}
           value={kpis.active}
           badge="primary"
-          sub="En cours de transit"
+          sub={t("trackingMap.inTransit")}
         />
         <KpiCard
           icon="fa-ship"
-          label="En mer"
+          label={t("trackingMap.atSea")}
           value={kpis.sea}
           badge="info"
-          sub="Navires suivis"
+          sub={t("trackingMap.trackedVessels")}
         />
         <KpiCard
           icon="fa-truck"
-          label="Routier"
+          label={t("trackingMap.road")}
           value={kpis.road}
           badge="warning"
-          sub="Véhicules en route"
+          sub={t("trackingMap.vehiclesOnRoad")}
         />
         <KpiCard
           icon="fa-triangle-exclamation"
-          label="Bloquées"
+          label={t("trackingMap.blocked")}
           value={kpis.blocked}
           badge="danger"
-          sub="Intervention requise"
+          sub={t("trackingMap.actionRequired")}
         />
       </div>
 
@@ -856,7 +873,7 @@ export default function TrackingMapPage() {
                   <input
                     className="form-control search-input"
                     type="search"
-                    placeholder="Référence, marchandise…"
+                    placeholder={t("trackingMap.searchPlaceholder")}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -869,7 +886,7 @@ export default function TrackingMapPage() {
                     className={`btn btn-sm ${!modeFilter ? "btn-primary" : "btn-phoenix-secondary"}`}
                     onClick={() => setModeFilter("")}
                   >
-                    Tous
+                    {t("trackingMap.all")}
                   </button>
                   {Object.entries(MODE_CONFIG).map(([k, v]) => (
                     <button
@@ -889,12 +906,12 @@ export default function TrackingMapPage() {
                 {loading ? (
                   <div className="text-center py-6 text-body-tertiary">
                     <span className="spinner-border spinner-border-sm me-2" />
-                    Chargement…
+                    {t("trackingMap.loading")}
                   </div>
                 ) : filtered.length === 0 ? (
                   <div className="text-center py-6 text-body-tertiary">
                     <span className="fas fa-map-marker-alt fs-3 d-block mb-2 opacity-50" />
-                    <p className="mb-0 fs-9">Aucune expédition active</p>
+                    <p className="mb-0 fs-9">{t("trackingMap.noActiveShipments")}</p>
                   </div>
                 ) : (
                   filtered.map((s) => (
@@ -914,8 +931,10 @@ export default function TrackingMapPage() {
               <div className="p-3 border-top bg-body-tertiary">
                 <p className="mb-0 fs-9 text-body-tertiary text-center">
                   <span className="fas fa-layer-group me-2 opacity-50" />
-                  {filtered.length} expédition{filtered.length !== 1 ? "s" : ""}{" "}
-                  affichée{filtered.length !== 1 ? "s" : ""}
+                  {filtered.length} {t("trackingMap.expedition")}
+                  {filtered.length !== 1 ? "s" : ""}{" "}
+                  {t("trackingMap.displayed")}
+                  {filtered.length !== 1 ? "s" : ""}
                 </p>
               </div>
             </div>

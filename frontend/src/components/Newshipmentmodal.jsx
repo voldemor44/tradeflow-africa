@@ -1,14 +1,15 @@
 import React, { useReducer, useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 // ============================================================
 // CONFIG
 // ============================================================
 
-const TRANSPORT_MODES = [
-  { value: "sea", label: "Maritime" },
-  { value: "air", label: "Aérien" },
-  { value: "road", label: "Routier" },
-  { value: "multi", label: "Multimodal" },
+const getTransportModes = (t) => [
+  { value: "sea", label: t("newShipment.modeSea") },
+  { value: "air", label: t("newShipment.modeAir") },
+  { value: "road", label: t("newShipment.modeRoad") },
+  { value: "multi", label: t("newShipment.modeMulti") },
 ];
 
 const INCOTERMS = [
@@ -25,9 +26,9 @@ const INCOTERMS = [
   "DDP",
 ];
 
-const STATUSES = [
-  { value: "draft", label: "Brouillon" },
-  { value: "booking", label: "Réservation" },
+const getStatuses = (t) => [
+  { value: "draft", label: t("newShipment.statusDraft") },
+  { value: "booking", label: t("newShipment.statusBooking") },
 ];
 
 const PARTNERS_LIST = [
@@ -126,23 +127,23 @@ const formReducer = (state, action) => {
 // VALIDATION
 // ============================================================
 
-const validate = (form) => {
+const validate = (form, t) => {
   const errors = {};
   if (!form.description.trim())
-    errors.description = "La description est requise.";
+    errors.description = t("newShipment.errorDescription");
   if (!form.originCountry)
-    errors.originCountry = "Le pays d'origine est requis.";
+    errors.originCountry = t("newShipment.errorOriginCountry");
   if (!form.originCity.trim())
-    errors.originCity = "La ville d'origine est requise.";
-  if (!form.mode) errors.mode = "Le mode de transport est requis.";
-  if (!form.incoterm) errors.incoterm = "L'incoterm est requis.";
+    errors.originCity = t("newShipment.errorOriginCity");
+  if (!form.mode) errors.mode = t("newShipment.errorMode");
+  if (!form.incoterm) errors.incoterm = t("newShipment.errorIncoterm");
   if (
     form.declaredValue &&
     isNaN(Number(form.declaredValue.replace(/\s/g, "")))
   )
-    errors.declaredValue = "Valeur invalide.";
+    errors.declaredValue = t("newShipment.errorValue");
   if (form.eta && form.etd && form.eta < form.etd)
-    errors.eta = "L'ETA doit être après l'ETD.";
+    errors.eta = t("newShipment.errorEta");
   return errors;
 };
 
@@ -174,12 +175,15 @@ const SectionTitle = ({ icon, title }) => (
 // ============================================================
 
 const NewShipmentModal = ({ onCreated }) => {
+  const { t } = useTranslation();
   const [state, dispatch] = useReducer(formReducer, {
     form: { ...initialForm },
     errors: {},
   });
   const { form, errors } = state;
   const modalRef = useRef(null);
+  const TRANSPORT_MODES = getTransportModes(t);
+  const STATUSES = getStatuses(t);
 
   const setField = useCallback((key, value) => {
     dispatch({ type: "SET_FIELD", key, value });
@@ -197,7 +201,7 @@ const NewShipmentModal = ({ onCreated }) => {
   const handleSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      const validationErrors = validate(form);
+      const validationErrors = validate(form, t);
       if (Object.keys(validationErrors).length > 0) {
         dispatch({ type: "SET_ERRORS", errors: validationErrors });
         // Scroll vers la première erreur
@@ -224,7 +228,7 @@ const NewShipmentModal = ({ onCreated }) => {
       if (onCreated) onCreated(newShipment);
       dispatch({ type: "RESET" });
     },
-    [form, onCreated],
+    [form, onCreated, t],
   );
 
   return (
@@ -252,10 +256,10 @@ const NewShipmentModal = ({ onCreated }) => {
                   className="modal-title mb-0 fw-bold"
                   id="newShipmentModalLabel"
                 >
-                  Nouvelle expédition
+                  {t("newShipment.title")}
                 </h5>
                 <p className="mb-0 fs-10 text-body-tertiary">
-                  Remplissez les informations pour créer le dossier
+                  {t("newShipment.subtitle")}
                 </p>
               </div>
             </div>
@@ -263,7 +267,7 @@ const NewShipmentModal = ({ onCreated }) => {
               type="button"
               className="btn-close"
               data-bs-dismiss="modal"
-              aria-label="Fermer"
+              aria-label={t("newShipment.close")}
             />
           </div>
 
@@ -271,25 +275,25 @@ const NewShipmentModal = ({ onCreated }) => {
           <div className="modal-body px-4 py-3">
             <form id="newShipmentForm" onSubmit={handleSubmit} noValidate>
               {/* ── SECTION 1 : Informations générales ── */}
-              <SectionTitle icon="info-circle" title="Informations générales" />
+              <SectionTitle icon="info-circle" title={t("newShipment.sectionGeneral")} />
               <div className="row g-3">
                 <div className="col-12 col-md-8">
                   <Field
-                    label="Description de la marchandise"
+                    label={t("newShipment.descriptionLabel")}
                     required
                     error={errors.description}
                   >
                     <input
                       type="text"
                       className={`form-control form-control-sm ${errors.description ? "is-invalid" : ""}`}
-                      placeholder="Ex : Équipements électroniques, Textiles…"
+                      placeholder={t("newShipment.descriptionPlaceholder")}
                       value={form.description}
                       onChange={(e) => setField("description", e.target.value)}
                     />
                   </Field>
                 </div>
                 <div className="col-12 col-md-4">
-                  <Field label="Statut initial" error={errors.status}>
+                  <Field label={t("newShipment.statusLabel")} error={errors.status}>
                     <select
                       className="form-select form-select-sm"
                       value={form.status}
@@ -305,13 +309,13 @@ const NewShipmentModal = ({ onCreated }) => {
                 </div>
                 <div className="col-12">
                   <Field
-                    label="Détails / Conditionnement"
+                    label={t("newShipment.detailsLabel")}
                     error={errors.details}
                   >
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="Ex : 3 conteneurs 20', vrac 120t, 2 palettes réfrigérées…"
+                      placeholder={t("newShipment.detailsPlaceholder")}
                       value={form.details}
                       onChange={(e) => setField("details", e.target.value)}
                     />
@@ -320,36 +324,36 @@ const NewShipmentModal = ({ onCreated }) => {
               </div>
 
               {/* ── SECTION 2 : Marchandise ── */}
-              <SectionTitle icon="box" title="Marchandise" />
+              <SectionTitle icon="box" title={t("newShipment.sectionGoods")} />
               <div className="row g-3">
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Code SH (HS Code)" error={errors.hsCode}>
+                  <Field label={t("newShipment.hsCodeLabel")} error={errors.hsCode}>
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="Ex : 8471.30"
+                      placeholder={t("newShipment.hsCodePlaceholder")}
                       value={form.hsCode}
                       onChange={(e) => setField("hsCode", e.target.value)}
                     />
                   </Field>
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Quantité" error={errors.quantity}>
+                  <Field label={t("newShipment.quantityLabel")} error={errors.quantity}>
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="Ex : 500 unités"
+                      placeholder={t("newShipment.quantityPlaceholder")}
                       value={form.quantity}
                       onChange={(e) => setField("quantity", e.target.value)}
                     />
                   </Field>
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Poids brut (kg)" error={errors.weight}>
+                  <Field label={t("newShipment.weightLabel")} error={errors.weight}>
                     <input
                       type="number"
                       className="form-control form-control-sm"
-                      placeholder="Ex : 12000"
+                      placeholder={t("newShipment.weightPlaceholder")}
                       min="0"
                       value={form.weight}
                       onChange={(e) => setField("weight", e.target.value)}
@@ -357,11 +361,11 @@ const NewShipmentModal = ({ onCreated }) => {
                   </Field>
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Volume (m³)" error={errors.volume}>
+                  <Field label={t("newShipment.volumeLabel")} error={errors.volume}>
                     <input
                       type="number"
                       className="form-control form-control-sm"
-                      placeholder="Ex : 45"
+                      placeholder={t("newShipment.volumePlaceholder")}
                       min="0"
                       value={form.volume}
                       onChange={(e) => setField("volume", e.target.value)}
@@ -370,13 +374,13 @@ const NewShipmentModal = ({ onCreated }) => {
                 </div>
                 <div className="col-12 col-md-4">
                   <Field
-                    label="Valeur déclarée (FCFA)"
+                    label={t("newShipment.declaredValueLabel")}
                     error={errors.declaredValue}
                   >
                     <input
                       type="text"
                       className={`form-control form-control-sm ${errors.declaredValue ? "is-invalid" : ""}`}
-                      placeholder="Ex : 18 500 000"
+                      placeholder={t("newShipment.declaredValuePlaceholder")}
                       value={form.declaredValue}
                       onChange={(e) =>
                         setField("declaredValue", e.target.value)
@@ -387,10 +391,10 @@ const NewShipmentModal = ({ onCreated }) => {
               </div>
 
               {/* ── SECTION 3 : Transport ── */}
-              <SectionTitle icon="truck" title="Transport" />
+              <SectionTitle icon="truck" title={t("newShipment.sectionTransport")} />
               <div className="row g-3">
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Mode de transport" required error={errors.mode}>
+                  <Field label={t("newShipment.modeLabel")} required error={errors.mode}>
                     <select
                       className={`form-select form-select-sm ${errors.mode ? "is-invalid" : ""}`}
                       value={form.mode}
@@ -405,7 +409,7 @@ const NewShipmentModal = ({ onCreated }) => {
                   </Field>
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Incoterm" required error={errors.incoterm}>
+                  <Field label={t("newShipment.incotermLabel")} required error={errors.incoterm}>
                     <select
                       className={`form-select form-select-sm ${errors.incoterm ? "is-invalid" : ""}`}
                       value={form.incoterm}
@@ -420,7 +424,7 @@ const NewShipmentModal = ({ onCreated }) => {
                   </Field>
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="ETD — Date de départ" error={errors.etd}>
+                  <Field label={t("newShipment.etdLabel")} error={errors.etd}>
                     <input
                       type="date"
                       className="form-control form-control-sm"
@@ -431,7 +435,7 @@ const NewShipmentModal = ({ onCreated }) => {
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
                   <Field
-                    label="ETA — Date d'arrivée estimée"
+                    label={t("newShipment.etaLabel")}
                     error={errors.eta}
                   >
                     <input
@@ -445,18 +449,18 @@ const NewShipmentModal = ({ onCreated }) => {
               </div>
 
               {/* ── SECTION 4 : Origine & Destination ── */}
-              <SectionTitle icon="map-pin" title="Origine & Destination" />
+              <SectionTitle icon="map-pin" title={t("newShipment.sectionRoute")} />
               <div className="row g-3">
                 {/* Origine */}
                 <div className="col-12 col-lg-6">
                   <p className="fs-10 fw-bold text-body-tertiary mb-2">
                     <span className="fas fa-arrow-up me-1 text-primary" />
-                    DÉPART
+                    {t("newShipment.departure")}
                   </p>
                   <div className="row g-2">
                     <div className="col-12 col-sm-6">
                       <Field
-                        label="Pays d'origine"
+                        label={t("newShipment.originCountryLabel")}
                         required
                         error={errors.originCountry}
                       >
@@ -467,7 +471,7 @@ const NewShipmentModal = ({ onCreated }) => {
                             setField("originCountry", e.target.value)
                           }
                         >
-                          <option value="">Sélectionner…</option>
+                          <option value="">{t("newShipment.select")}</option>
                           {COUNTRIES.map((c) => (
                             <option key={c.value} value={c.value}>
                               {c.label}
@@ -477,11 +481,11 @@ const NewShipmentModal = ({ onCreated }) => {
                       </Field>
                     </div>
                     <div className="col-12 col-sm-6">
-                      <Field label="Ville" required error={errors.originCity}>
+                      <Field label={t("newShipment.cityLabel")} required error={errors.originCity}>
                         <input
                           type="text"
                           className={`form-control form-control-sm ${errors.originCity ? "is-invalid" : ""}`}
-                          placeholder="Ex : Shanghai"
+                          placeholder={t("newShipment.cityPlaceholder")}
                           value={form.originCity}
                           onChange={(e) =>
                             setField("originCity", e.target.value)
@@ -491,13 +495,13 @@ const NewShipmentModal = ({ onCreated }) => {
                     </div>
                     <div className="col-12">
                       <Field
-                        label="Port / Aéroport de chargement"
+                        label={t("newShipment.loadingPortLabel")}
                         error={errors.originPort}
                       >
                         <input
                           type="text"
                           className="form-control form-control-sm"
-                          placeholder="Ex : Port de Shanghai"
+                          placeholder={t("newShipment.loadingPortPlaceholder")}
                           value={form.originPort}
                           onChange={(e) =>
                             setField("originPort", e.target.value)
@@ -512,12 +516,12 @@ const NewShipmentModal = ({ onCreated }) => {
                 <div className="col-12 col-lg-6">
                   <p className="fs-10 fw-bold text-body-tertiary mb-2">
                     <span className="fas fa-arrow-down me-1 text-success" />
-                    ARRIVÉE
+                    {t("newShipment.arrival")}
                   </p>
                   <div className="row g-2">
                     <div className="col-12 col-sm-6">
                       <Field
-                        label="Pays de destination"
+                        label={t("newShipment.destCountryLabel")}
                         error={errors.destinationCountry}
                       >
                         <select
@@ -536,11 +540,11 @@ const NewShipmentModal = ({ onCreated }) => {
                       </Field>
                     </div>
                     <div className="col-12 col-sm-6">
-                      <Field label="Ville" error={errors.destinationCity}>
+                      <Field label={t("newShipment.cityLabel")} error={errors.destinationCity}>
                         <input
                           type="text"
                           className="form-control form-control-sm"
-                          placeholder="Ex : Cotonou"
+                          placeholder={t("newShipment.destCityPlaceholder")}
                           value={form.destinationCity}
                           onChange={(e) =>
                             setField("destinationCity", e.target.value)
@@ -550,13 +554,13 @@ const NewShipmentModal = ({ onCreated }) => {
                     </div>
                     <div className="col-12">
                       <Field
-                        label="Port / Aéroport de déchargement"
+                        label={t("newShipment.unloadingPortLabel")}
                         error={errors.destinationPort}
                       >
                         <input
                           type="text"
                           className="form-control form-control-sm"
-                          placeholder="Ex : Port de Cotonou"
+                          placeholder={t("newShipment.unloadingPortPlaceholder")}
                           value={form.destinationPort}
                           onChange={(e) =>
                             setField("destinationPort", e.target.value)
@@ -569,10 +573,10 @@ const NewShipmentModal = ({ onCreated }) => {
               </div>
 
               {/* ── SECTION 5 : Partenaires ── */}
-              <SectionTitle icon="users" title="Partenaires" />
+              <SectionTitle icon="users" title={t("newShipment.sectionPartners")} />
               <div className="row g-3">
                 <div className="col-12 col-md-4">
-                  <Field label="Transitaire" error={errors.freightForwarder}>
+                  <Field label={t("newShipment.forwarderLabel")} error={errors.freightForwarder}>
                     <select
                       className="form-select form-select-sm"
                       value={form.freightForwarder}
@@ -580,7 +584,7 @@ const NewShipmentModal = ({ onCreated }) => {
                         setField("freightForwarder", e.target.value)
                       }
                     >
-                      <option value="">Sélectionner…</option>
+                      <option value="">{t("newShipment.select")}</option>
                       {PARTNERS_LIST.map((p) => (
                         <option key={p.value} value={p.value}>
                           {p.label}
@@ -591,7 +595,7 @@ const NewShipmentModal = ({ onCreated }) => {
                 </div>
                 <div className="col-12 col-md-4">
                   <Field
-                    label="Commissionnaire en douane"
+                    label={t("newShipment.customsBrokerLabel")}
                     error={errors.customsBroker}
                   >
                     <select
@@ -601,7 +605,7 @@ const NewShipmentModal = ({ onCreated }) => {
                         setField("customsBroker", e.target.value)
                       }
                     >
-                      <option value="">Sélectionner…</option>
+                      <option value="">{t("newShipment.select")}</option>
                       {PARTNERS_LIST.map((p) => (
                         <option key={p.value} value={p.value}>
                           {p.label}
@@ -612,13 +616,13 @@ const NewShipmentModal = ({ onCreated }) => {
                 </div>
                 <div className="col-12 col-md-4">
                   <Field
-                    label="Fournisseur / Expéditeur"
+                    label={t("newShipment.supplierLabel")}
                     error={errors.supplier}
                   >
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="Nom du fournisseur"
+                      placeholder={t("newShipment.supplierPlaceholder")}
                       value={form.supplier}
                       onChange={(e) => setField("supplier", e.target.value)}
                     />
@@ -627,15 +631,15 @@ const NewShipmentModal = ({ onCreated }) => {
               </div>
 
               {/* ── SECTION 6 : Notes ── */}
-              <SectionTitle icon="file-text" title="Notes internes" />
+              <SectionTitle icon="file-text" title={t("newShipment.sectionNotes")} />
               <Field
-                label="Notes & instructions particulières"
+                label={t("newShipment.notesLabel")}
                 error={errors.notes}
               >
                 <textarea
                   className="form-control form-control-sm"
                   rows={3}
-                  placeholder="Instructions douanières, contacts sur place, documents à préparer…"
+                  placeholder={t("newShipment.notesPlaceholder")}
                   value={form.notes}
                   onChange={(e) => setField("notes", e.target.value)}
                 />
@@ -651,7 +655,7 @@ const NewShipmentModal = ({ onCreated }) => {
               data-bs-dismiss="modal"
             >
               <span className="fas fa-times me-2" />
-              Annuler
+              {t("newShipment.cancel")}
             </button>
             <div className="d-flex gap-2">
               <button
@@ -661,7 +665,7 @@ const NewShipmentModal = ({ onCreated }) => {
                 onClick={() => setField("status", "draft")}
               >
                 <span className="fas fa-save me-2" />
-                Enregistrer en brouillon
+                {t("newShipment.saveDraft")}
               </button>
               <button
                 type="submit"
@@ -669,7 +673,7 @@ const NewShipmentModal = ({ onCreated }) => {
                 className="btn btn-primary"
               >
                 <span className="fas fa-check me-2" />
-                Créer l'expédition
+                {t("newShipment.create")}
               </button>
             </div>
           </div>

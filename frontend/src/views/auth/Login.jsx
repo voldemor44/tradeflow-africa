@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axiosClient from "../../axios-client";
 import { useStateContext } from "../../contexts/ContextProvider";
+import { useTranslation } from "react-i18next";
 
 const Login = () => {
   const navigate = useNavigate();
   const { setToken, setRefreshToken, setUser, setUserId } = useStateContext();
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     username: "",
@@ -30,7 +32,7 @@ const Login = () => {
     e.preventDefault();
 
     if (!formData.username.trim() || !formData.password) {
-      setApiError("Identifiant et mot de passe requis.");
+      setApiError(t("login.errorRequired"));
       return;
     }
 
@@ -57,7 +59,7 @@ const Login = () => {
             Array.isArray(firstError) ? firstError[0] : String(firstError),
           );
         } else {
-          setApiError("Une erreur est survenue. Vérifiez votre connexion.");
+          setApiError(t("login.errorNetwork"));
         }
       })
       .finally(() => {
@@ -84,20 +86,19 @@ const Login = () => {
                     </span>
                   </div>
                   <h3 className="mb-3 text-body-emphasis fs-7">
-                    Bienvenue sur votre
+                    {t("login.welcomeTitle")}
                     <br />
-                    espace logistique
+                    {t("login.welcomeTitle2")}
                   </h3>
                   <p className="text-body-tertiary mb-4">
-                    Gérez vos expéditions, documents et partenaires depuis une
-                    seule plateforme.
+                    {t("login.welcomeDesc")}
                   </p>
                   <ul className="list-unstyled mb-0 w-max-content w-md-auto">
                     {[
-                      "Suivi en temps réel",
-                      "Gestion documentaire",
-                      "Simulation douanière",
-                      "Multi-partenaires",
+                      t("login.featureRealTime"),
+                      t("login.featureDocs"),
+                      t("login.featureCustoms"),
+                      t("login.featureMultiPartner"),
                     ].map((f) => (
                       <li key={f} className="d-flex align-items-center mb-2">
                         <span className="fas fa-check-circle text-success me-2" />
@@ -138,9 +139,9 @@ const Login = () => {
                         width={58}
                       />
                     </Link>
-                    <h3 className="text-body-highlight fw-bold">Connexion</h3>
+                    <h3 className="text-body-highlight fw-bold">{t("login.title")}</h3>
                     <p className="text-body-tertiary fs-9">
-                      Accédez à votre tableau de bord
+                      {t("login.subtitle")}
                     </p>
                   </div>
 
@@ -157,7 +158,7 @@ const Login = () => {
                     {/* Identifiant */}
                     <div className="mb-3 text-start">
                       <label className="form-label" htmlFor="username">
-                        Identifiant
+                        {t("login.username")}
                       </label>
                       <div className="form-icon-container">
                         <input
@@ -165,7 +166,7 @@ const Login = () => {
                           id="username"
                           name="username"
                           type="text"
-                          placeholder="nom.utilisateur"
+                          placeholder={t("login.usernamePlaceholder")}
                           value={formData.username}
                           onChange={handleChange}
                           autoComplete="username"
@@ -179,7 +180,7 @@ const Login = () => {
                     {/* Mot de passe */}
                     <div className="mb-3 text-start">
                       <label className="form-label" htmlFor="password">
-                        Mot de passe
+                        {t("login.password")}
                       </label>
                       <div className="form-icon-container position-relative">
                         <input
@@ -223,7 +224,7 @@ const Login = () => {
                             className="form-check-label mb-0 fs-9"
                             htmlFor="rememberMe"
                           >
-                            Se souvenir de moi
+                            {t("login.rememberMe")}
                           </label>
                         </div>
                       </div>
@@ -232,7 +233,7 @@ const Login = () => {
                           className="fs-9 fw-semibold"
                           to="/forgot-password"
                         >
-                          Mot de passe oublié ?
+                          {t("login.forgotPassword")}
                         </Link>
                       </div>
                     </div>
@@ -246,12 +247,12 @@ const Login = () => {
                       {loading ? (
                         <>
                           <span className="spinner-border spinner-border-sm me-2" />
-                          Connexion en cours…
+                          {t("login.signingIn")}
                         </>
                       ) : (
                         <>
                           <span className="fas fa-sign-in-alt me-2" />
-                          Se connecter
+                          {t("login.signIn")}
                         </>
                       )}
                     </button>
@@ -259,10 +260,10 @@ const Login = () => {
                     {/* Lien inscription */}
                     <div className="text-center">
                       <span className="text-body-tertiary fs-9">
-                        Pas encore de compte ?{" "}
+                        {t("login.noAccount")}{" "}
                       </span>
                       <Link className="fs-9 fw-bold" to="/register">
-                        Créer un compte
+                        {t("login.createAccount")}
                       </Link>
                     </div>
                   </form>

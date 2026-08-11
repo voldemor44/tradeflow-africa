@@ -1,15 +1,16 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useSearchParams, NavLink } from "react-router-dom";
 import axiosClient from "../axios-client";
+import { useTranslation } from "react-i18next";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
-const VALIDATION_CONFIG = {
-  pending: { label: "En attente", badge: "warning", icon: "fa-clock" },
-  approved: { label: "Approuvé", badge: "success", icon: "fa-check-circle" },
-  rejected: { label: "Rejeté", badge: "danger", icon: "fa-times-circle" },
-  expired: { label: "Expiré", badge: "secondary", icon: "fa-calendar-xmark" },
-};
+const getValidationConfig = (t) => ({
+  pending: { label: t("shipmentDocuments.statusPending"), badge: "warning", icon: "fa-clock" },
+  approved: { label: t("shipmentDocuments.statusApproved"), badge: "success", icon: "fa-check-circle" },
+  rejected: { label: t("shipmentDocuments.statusRejected"), badge: "danger", icon: "fa-times-circle" },
+  expired: { label: t("shipmentDocuments.statusExpired"), badge: "secondary", icon: "fa-calendar-xmark" },
+});
 
 const FORMAT_CONFIG = {
   pdf: { icon: "fa-file-pdf", color: "#dc3545", bg: "#dc354518" },
@@ -49,17 +50,28 @@ const fmtSize = (bytes) => {
   return `${(bytes / 1048576).toFixed(1)} Mo`;
 };
 
-const daysLabel = (days, isExpired) => {
-  if (isExpired || days < 0) return { text: "Expiré", cls: "text-danger" };
-  if (days === 0) return { text: "Expire aujourd'hui", cls: "text-danger" };
-  if (days <= 7) return { text: `${days}j restants`, cls: "text-danger" };
-  if (days <= 30) return { text: `${days}j restants`, cls: "text-warning" };
-  return { text: `${days}j restants`, cls: "text-body-tertiary" };
+const daysLabel = (days, isExpired, t) => {
+  if (isExpired || days < 0)
+    return { text: t("shipmentDocuments.statusExpired"), cls: "text-danger" };
+  if (days === 0)
+    return {
+      text: t("shipmentDocuments.expiresToday"),
+      cls: "text-danger",
+    };
+  return {
+    text: t("shipmentDocuments.daysLeft", { count: days }),
+    cls: days <= 7
+      ? "text-danger"
+      : days <= 30
+        ? "text-warning"
+        : "text-body-tertiary",
+  };
 };
 
 // ─── MODAL VALIDATION ──────────────────────────────────────
 
 const ValidateModal = ({ doc, onDone, onClose }) => {
+  const { t } = useTranslation();
   const [action, setAction] = useState("approve");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,7 +79,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
 
   const submit = () => {
     if (action === "reject" && !reason.trim()) {
-      setError("Le motif de rejet est obligatoire.");
+      setError(t("shipmentDocuments.rejectReasonRequired"));
       return;
     }
     setLoading(true);
@@ -77,7 +89,9 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
         rejection_reason: reason,
       })
       .then(({ data }) => onDone(data))
-      .catch((err) => setError(err.response?.data?.detail ?? "Erreur."))
+      .catch((err) =>
+        setError(err.response?.data?.detail ?? t("shipmentDocuments.error")),
+      )
       .finally(() => setLoading(false));
   };
 
@@ -93,7 +107,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
           <div className="modal-header border-0 pb-0">
             <h5 className="modal-title fw-bold">
               <span className="fas fa-shield-check me-2 text-primary" />
-              Valider le document
+              {t("shipmentDocuments.validateTitle")}
             </h5>
             <button className="btn-close" onClick={onClose} />
           </div>
@@ -121,13 +135,13 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
               {[
                 {
                   value: "approve",
-                  label: "Approuver",
+                  label: t("shipmentDocuments.approve"),
                   badge: "success",
                   icon: "fa-check-circle",
                 },
                 {
                   value: "reject",
-                  label: "Rejeter",
+                  label: t("shipmentDocuments.reject"),
                   badge: "danger",
                   icon: "fa-times-circle",
                 },
@@ -152,12 +166,12 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
             {action === "reject" && (
               <div className="mb-3">
                 <label className="form-label fs-9 fw-semibold">
-                  Motif <span className="text-danger">*</span>
+                  {t("shipmentDocuments.reason")} <span className="text-danger">*</span>
                 </label>
                 <textarea
                   className={`form-control fs-9 ${error ? "is-invalid" : ""}`}
                   rows={3}
-                  placeholder="Document illisible, informations incomplètes…"
+                  placeholder={t("shipmentDocuments.reasonPlaceholder")}
                   value={reason}
                   onChange={(e) => {
                     setReason(e.target.value);
@@ -177,7 +191,7 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Annuler
+              {t("shipmentDocuments.cancel")}
             </button>
             <button
               className={`btn btn-${action === "approve" ? "success" : "danger"}`}
@@ -187,12 +201,12 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
-                  Traitement…
+                  {t("shipmentDocuments.processing")}
                 </>
               ) : action === "approve" ? (
-                "Confirmer l'approbation"
+                t("shipmentDocuments.confirmApprove")
               ) : (
-                "Confirmer le rejet"
+                t("shipmentDocuments.confirmReject")
               )}
             </button>
           </div>
@@ -205,18 +219,20 @@ const ValidateModal = ({ doc, onDone, onClose }) => {
 // ─── CARTE DOCUMENT ────────────────────────────────────────
 
 const DocumentCard = ({ doc, onValidate, onDeleted }) => {
+  const { t } = useTranslation();
+  const VALIDATION_CONFIG = getValidationConfig(t);
   const fmt = FORMAT_CONFIG[doc.file_format] ?? FORMAT_CONFIG.other;
   const val =
     VALIDATION_CONFIG[doc.validation_status] ?? VALIDATION_CONFIG.pending;
   const expInfo = doc.expiry_date
-    ? daysLabel(doc.days_until_expiry, doc.is_expired)
+    ? daysLabel(doc.days_until_expiry, doc.is_expired, t)
     : null;
   const isExpired = doc.is_expired || doc.days_until_expiry < 0;
   const expiring =
     !isExpired && doc.days_until_expiry >= 0 && doc.days_until_expiry <= 7;
 
   const handleDelete = () => {
-    if (!window.confirm("Supprimer ce document définitivement ?")) return;
+    if (!window.confirm(t("shipmentDocuments.confirmDelete"))) return;
     axiosClient.delete(`/documents/${doc.id}/`).then(() => onDeleted(doc.id));
   };
 
@@ -235,8 +251,10 @@ const DocumentCard = ({ doc, onValidate, onDeleted }) => {
           />
           <span className="text-white fw-semibold" style={{ fontSize: 10 }}>
             {isExpired
-              ? "Document expiré"
-              : `Expire dans ${doc.days_until_expiry} jour${doc.days_until_expiry > 1 ? "s" : ""}`}
+              ? t("shipmentDocuments.documentExpired")
+              : t("shipmentDocuments.expiresInDays", {
+                  count: doc.days_until_expiry,
+                })}
           </span>
         </div>
       )}
@@ -276,17 +294,17 @@ const DocumentCard = ({ doc, onValidate, onDeleted }) => {
         <div className="d-flex flex-column gap-1">
           {doc.reference_number && (
             <div className="d-flex justify-content-between">
-              <span className="fs-10 text-body-tertiary">Référence</span>
+              <span className="fs-10 text-body-tertiary">{t("shipmentDocuments.reference")}</span>
               <span className="fs-10 fw-semibold">{doc.reference_number}</span>
             </div>
           )}
           <div className="d-flex justify-content-between">
-            <span className="fs-10 text-body-tertiary">Émission</span>
+            <span className="fs-10 text-body-tertiary">{t("shipmentDocuments.issue")}</span>
             <span className="fs-10 fw-semibold">{fmtDate(doc.issue_date)}</span>
           </div>
           {doc.expiry_date && (
             <div className="d-flex justify-content-between">
-              <span className="fs-10 text-body-tertiary">Expiration</span>
+              <span className="fs-10 text-body-tertiary">{t("shipmentDocuments.expiration")}</span>
               <span className={`fs-10 fw-semibold ${expInfo?.cls ?? ""}`}>
                 {fmtDate(doc.expiry_date)}
                 {expInfo && (
@@ -296,7 +314,7 @@ const DocumentCard = ({ doc, onValidate, onDeleted }) => {
             </div>
           )}
           <div className="d-flex justify-content-between">
-            <span className="fs-10 text-body-tertiary">Fichier</span>
+            <span className="fs-10 text-body-tertiary">{t("shipmentDocuments.file")}</span>
             <span
               className="fs-10 text-body-tertiary text-truncate ms-2"
               style={{ maxWidth: 140 }}
@@ -305,7 +323,7 @@ const DocumentCard = ({ doc, onValidate, onDeleted }) => {
             </span>
           </div>
           <div className="d-flex justify-content-between">
-            <span className="fs-10 text-body-tertiary">Uploadé par</span>
+            <span className="fs-10 text-body-tertiary">{t("shipmentDocuments.uploadedBy")}</span>
             <span className="fs-10 fw-semibold">
               {doc.uploaded_by_name ?? "—"}
             </span>
@@ -330,14 +348,14 @@ const DocumentCard = ({ doc, onValidate, onDeleted }) => {
               rel="noreferrer"
             >
               <span className="fas fa-download me-2" />
-              Télécharger
+              {t("shipmentDocuments.download")}
             </a>
           )}
           {doc.validation_status === "pending" && (
             <button
               className="btn btn-sm btn-phoenix-success"
               onClick={() => onValidate(doc)}
-              title="Valider"
+              title={t("shipmentDocuments.validate")}
             >
               <span className="fas fa-shield-check" />
             </button>
@@ -345,7 +363,7 @@ const DocumentCard = ({ doc, onValidate, onDeleted }) => {
           <button
             className="btn btn-sm btn-phoenix-danger"
             onClick={handleDelete}
-            title="Supprimer"
+            title={t("shipmentDocuments.delete")}
           >
             <span className="fas fa-trash" />
           </button>
@@ -358,6 +376,8 @@ const DocumentCard = ({ doc, onValidate, onDeleted }) => {
 // ─── COMPOSANT PRINCIPAL ───────────────────────────────────
 
 export default function ShipmentDocumentsPage() {
+  const { t } = useTranslation();
+  const VALIDATION_CONFIG = getValidationConfig(t);
   // Supporte deux modes :
   //   /expeditions/:id/documents  → id depuis useParams
   //   /documents?shipment=<uuid>  → id depuis useSearchParams
@@ -390,9 +410,9 @@ export default function ShipmentDocumentsPage() {
         setDocuments(d.results ?? d);
         setDocTypes(dt.results ?? dt);
       })
-      .catch(() => setError("Impossible de charger les documents."))
+      .catch(() => setError(t("shipmentDocuments.loadError")))
       .finally(() => setLoading(false));
-  }, [shipmentId]);
+  }, [shipmentId, t]);
 
   // ── Filtrage ────────────────────────────────────────────
   const filtered = useMemo(
@@ -443,7 +463,7 @@ export default function ShipmentDocumentsPage() {
       >
         <div className="text-center text-body-tertiary">
           <span className="spinner-border text-primary d-block mx-auto mb-3" />
-          Chargement des documents…
+          {t("shipmentDocuments.loading")}
         </div>
       </div>
     );
@@ -471,7 +491,7 @@ export default function ShipmentDocumentsPage() {
             <ol className="breadcrumb fs-10 mb-0">
               <li className="breadcrumb-item">
                 <NavLink to="/expeditions" className="text-body-tertiary">
-                  Expéditions
+                  {t("shipmentDocuments.expeditions")}
                 </NavLink>
               </li>
               {shipment && (
@@ -484,17 +504,17 @@ export default function ShipmentDocumentsPage() {
                   </NavLink>
                 </li>
               )}
-              <li className="breadcrumb-item active">Documents</li>
+              <li className="breadcrumb-item active">{t("shipmentDocuments.documents")}</li>
             </ol>
           </nav>
 
           <div className="d-flex align-items-start justify-content-between flex-wrap gap-3">
             <div>
-              <h2 className="mb-1">Documents</h2>
+              <h2 className="mb-1">{t("shipmentDocuments.documents")}</h2>
               {shipment && (
                 <p className="text-body-tertiary mb-0 fs-9">
                   <span className="fas fa-folder me-1 text-primary" />
-                  Expédition{" "}
+                  {t("shipmentDocuments.shipment")}{" "}
                   <NavLink
                     to={`/expeditions/${shipmentId}`}
                     className="fw-semibold text-primary"
@@ -515,7 +535,7 @@ export default function ShipmentDocumentsPage() {
               data-bs-target="#uploadDocumentModal"
             >
               <span className="fas fa-upload me-2" />
-              Uploader un document
+              {t("shipmentDocuments.upload")}
             </button>
           </div>
         </div>
@@ -524,25 +544,25 @@ export default function ShipmentDocumentsPage() {
         <div className="row g-3 mb-4">
           {[
             {
-              label: "Total",
+              label: t("shipmentDocuments.kpiTotal"),
               value: kpis.total,
               badge: "primary",
               icon: "fa-file-alt",
             },
             {
-              label: "En attente",
+              label: t("shipmentDocuments.kpiPending"),
               value: kpis.pending,
               badge: "warning",
               icon: "fa-clock",
             },
             {
-              label: "Approuvés",
+              label: t("shipmentDocuments.kpiApproved"),
               value: kpis.approved,
               badge: "success",
               icon: "fa-check-circle",
             },
             {
-              label: "Alertes",
+              label: t("shipmentDocuments.kpiAlerts"),
               value: kpis.alerts,
               badge: "danger",
               icon: "fa-triangle-exclamation",
@@ -587,7 +607,7 @@ export default function ShipmentDocumentsPage() {
                 <span className="fas fa-triangle-exclamation text-warning fs-6 flex-shrink-0 mt-1" />
                 <div>
                   <p className="mb-1 fw-semibold fs-9">
-                    Documents obligatoires manquants
+                    {t("shipmentDocuments.missingMandatory")}
                   </p>
                   <div className="d-flex flex-wrap gap-2">
                     {mandatory.map((dt) => (
@@ -614,7 +634,7 @@ export default function ShipmentDocumentsPage() {
               className={`btn btn-sm ${!filterStatus ? "btn-primary" : "btn-phoenix-secondary"}`}
               onClick={() => setFilterStatus("")}
             >
-              Tous{" "}
+              {t("shipmentDocuments.all")}{" "}
               <span className="ms-1 badge bg-body-secondary text-body fw-bold">
                 {documents.length}
               </span>
@@ -649,7 +669,7 @@ export default function ShipmentDocumentsPage() {
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
             >
-              <option value="">Tous les types</option>
+              <option value="">{t("shipmentDocuments.allTypes")}</option>
               {docTypes.map((dt) => (
                 <option key={dt.id} value={dt.id}>
                   {dt.name}
@@ -660,14 +680,14 @@ export default function ShipmentDocumentsPage() {
               <button
                 className={`btn btn-sm ${view === "grid" ? "btn-primary" : "btn-phoenix-secondary"}`}
                 onClick={() => setView("grid")}
-                title="Vue grille"
+                title={t("shipmentDocuments.gridView")}
               >
                 <span className="fas fa-grid-2" />
               </button>
               <button
                 className={`btn btn-sm ${view === "list" ? "btn-primary" : "btn-phoenix-secondary"}`}
                 onClick={() => setView("list")}
-                title="Vue liste"
+                title={t("shipmentDocuments.listView")}
               >
                 <span className="fas fa-list" />
               </button>
@@ -680,11 +700,11 @@ export default function ShipmentDocumentsPage() {
           <div className="card">
             <div className="card-body text-center py-7 text-body-tertiary">
               <span className="fas fa-file-circle-xmark fs-3 d-block mb-3 opacity-50" />
-              <p className="mb-1 fw-semibold fs-8">Aucun document trouvé</p>
+              <p className="mb-1 fw-semibold fs-8">{t("shipmentDocuments.noDocumentsFound")}</p>
               <p className="mb-3 fs-9">
                 {filterType || filterStatus
-                  ? "Aucun document ne correspond aux filtres sélectionnés."
-                  : "Cette expédition n'a pas encore de documents uploadés."}
+                  ? t("shipmentDocuments.noDocumentsFiltered")
+                  : t("shipmentDocuments.noDocumentsUploaded")}
               </p>
               <button
                 className="btn btn-primary btn-sm"
@@ -692,7 +712,7 @@ export default function ShipmentDocumentsPage() {
                 data-bs-target="#uploadDocumentModal"
               >
                 <span className="fas fa-upload me-2" />
-                Uploader le premier document
+                {t("shipmentDocuments.uploadFirst")}
               </button>
             </div>
           </div>
@@ -721,22 +741,22 @@ export default function ShipmentDocumentsPage() {
                         className="ps-3 align-middle"
                         style={{ minWidth: 220 }}
                       >
-                        DOCUMENT
+                        {t("shipmentDocuments.document")}
                       </th>
                       <th className="align-middle" style={{ minWidth: 120 }}>
-                        STATUT
+                        {t("shipmentDocuments.status")}
                       </th>
                       <th className="align-middle" style={{ minWidth: 100 }}>
-                        ÉMISSION
+                        {t("shipmentDocuments.issue")}
                       </th>
                       <th className="align-middle" style={{ minWidth: 130 }}>
-                        EXPIRATION
+                        {t("shipmentDocuments.expiration")}
                       </th>
                       <th className="align-middle" style={{ minWidth: 130 }}>
-                        UPLOADÉ PAR
+                        {t("shipmentDocuments.uploadedBy")}
                       </th>
                       <th className="align-middle" style={{ minWidth: 70 }}>
-                        TAILLE
+                        {t("shipmentDocuments.size")}
                       </th>
                       <th
                         className="align-middle pe-3"
@@ -752,7 +772,7 @@ export default function ShipmentDocumentsPage() {
                         VALIDATION_CONFIG[doc.validation_status] ??
                         VALIDATION_CONFIG.pending;
                       const expI = doc.expiry_date
-                        ? daysLabel(doc.days_until_expiry, doc.is_expired)
+                        ? daysLabel(doc.days_until_expiry, doc.is_expired, t)
                         : null;
                       const isExp = doc.is_expired || doc.days_until_expiry < 0;
 
@@ -841,7 +861,7 @@ export default function ShipmentDocumentsPage() {
                                   href={doc.file}
                                   target="_blank"
                                   rel="noreferrer"
-                                  title="Télécharger"
+                                  title={t("shipmentDocuments.download")}
                                 >
                                   <span className="fas fa-download" />
                                 </a>
@@ -850,7 +870,7 @@ export default function ShipmentDocumentsPage() {
                                 <button
                                   className="btn btn-sm btn-phoenix-success"
                                   onClick={() => setValidating(doc)}
-                                  title="Valider"
+                                  title={t("shipmentDocuments.validate")}
                                 >
                                   <span className="fas fa-shield-check" />
                                 </button>
@@ -858,12 +878,12 @@ export default function ShipmentDocumentsPage() {
                               <button
                                 className="btn btn-sm btn-phoenix-danger"
                                 onClick={() => {
-                                  if (window.confirm("Supprimer ce document ?"))
+                                  if (window.confirm(t("shipmentDocuments.confirmDeleteShort")))
                                     axiosClient
                                       .delete(`/documents/${doc.id}/`)
                                       .then(() => onDeleted(doc.id));
                                 }}
-                                title="Supprimer"
+                                title={t("shipmentDocuments.delete")}
                               >
                                 <span className="fas fa-trash" />
                               </button>

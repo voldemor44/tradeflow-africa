@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
+import { useTranslation } from "react-i18next";
 
 // === CONFIGURATION ===
 const GAUGE_CONFIG = {
@@ -63,11 +64,13 @@ const formatTooltip = (params) => {
  */
 const CommissionChart = ({
   value = GAUGE_CONFIG.defaultValue,
-  label = "Commission",
+  label,
   progressColor = "primary",
   backgroundColor = "secondary-bg",
   height = "200px",
 }) => {
+  const { t } = useTranslation();
+  const resolvedLabel = label ?? t("travelAgency.commission");
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
@@ -96,7 +99,7 @@ const CommissionChart = ({
       series: [
         {
           type: "gauge",
-          name: label,
+          name: resolvedLabel,
           startAngle: GAUGE_CONFIG.startAngle,
           endAngle: GAUGE_CONFIG.endAngle,
           radius: GAUGE_CONFIG.radius,
@@ -138,7 +141,7 @@ const CommissionChart = ({
       window.removeEventListener("resize", handleResize);
       chartInstanceRef.current?.dispose();
     };
-  }, [value, label, progressColor, backgroundColor]);
+  }, [value, resolvedLabel, progressColor, backgroundColor, t]);
 
   // === RENDU ===
 

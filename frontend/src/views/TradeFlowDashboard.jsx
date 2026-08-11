@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router";
+import { useTranslation } from "react-i18next";
 import ShipmentsVolumeChart from "../components/dashboard/ShipmentsVolumeChart";
 import ActiveShipmentsChart from "../components/dashboard/ActiveShipmentsChart";
 import NewShipmentsChart from "../components/dashboard/NewShipmentsChart";
@@ -10,6 +11,7 @@ import RecentShipmentsTable from "../components/dashboard/RecentShipmentsTable";
 import WorldMap from "../components/dashboard/WorldMap";
 
 const TradeFlowDashboard = () => {
+  const { t } = useTranslation();
   return (
     <>
       <div className="pb-5">
@@ -18,9 +20,9 @@ const TradeFlowDashboard = () => {
           <div className="col-12 col-xxl-6">
             {/* En-tête */}
             <div className="mb-8">
-              <h2 className="mb-2">Tableau de bord</h2>
+              <h2 className="mb-2">{t("dashboard.title")}</h2>
               <h5 className="text-body-tertiary fw-semibold">
-                Vue d'ensemble de vos opérations import-export
+                {t("dashboard.subtitle")}
               </h5>
             </div>
 
@@ -49,9 +51,9 @@ const TradeFlowDashboard = () => {
                     />
                   </span>
                   <div className="ms-3">
-                    <h4 className="mb-0">3 expéditions</h4>
+                    <h4 className="mb-0">{t("dashboard.expeditionsBlocked")}</h4>
                     <p className="text-body-secondary fs-9 mb-0">
-                      Bloquées en douane
+                      {t("dashboard.blockedCustoms")}
                     </p>
                   </div>
                 </NavLink>
@@ -79,9 +81,9 @@ const TradeFlowDashboard = () => {
                     />
                   </span>
                   <div className="ms-3">
-                    <h4 className="mb-0">7 documents</h4>
+                    <h4 className="mb-0">{t("dashboard.documentsExpiring")}</h4>
                     <p className="text-body-secondary fs-9 mb-0">
-                      Expirent sous 7 jours
+                      {t("dashboard.expireWithin7")}
                     </p>
                   </div>
                 </NavLink>
@@ -109,9 +111,9 @@ const TradeFlowDashboard = () => {
                     />
                   </span>
                   <div className="ms-3">
-                    <h4 className="mb-0">14 navires</h4>
+                    <h4 className="mb-0">{t("dashboard.vesselsActive")}</h4>
                     <p className="text-body-secondary fs-9 mb-0">
-                      En mer actuellement
+                      {t("dashboard.atSeaNow")}
                     </p>
                   </div>
                 </NavLink>
@@ -123,9 +125,9 @@ const TradeFlowDashboard = () => {
             {/* Sélecteur de période */}
             <div className="row flex-between-center mb-4 g-3">
               <div className="col-auto">
-                <h3>Volume d'expéditions</h3>
+                <h3>{t("dashboard.shipmentVolume")}</h3>
                 <p className="text-body-tertiary lh-sm mb-0">
-                  Dossiers ouverts et en cours ce mois-ci
+                  {t("dashboard.shipmentVolumeDesc")}
                 </p>
               </div>
               <div className="col-8 col-sm-4">
@@ -148,7 +150,7 @@ const TradeFlowDashboard = () => {
                   style={{ width: 16, height: 3 }}
                 />
                 <span className="fs-10 text-body-tertiary fw-semibold">
-                  Mois en cours
+                  {t("dashboard.currentMonth")}
                 </span>
               </div>
               <div className="d-flex align-items-center gap-2">
@@ -157,7 +159,7 @@ const TradeFlowDashboard = () => {
                   style={{ width: 16, height: 3, borderTop: "2px dashed" }}
                 />
                 <span className="fs-10 text-body-tertiary fw-semibold">
-                  Mois précédent
+                  {t("dashboard.previousMonth")}
                 </span>
               </div>
             </div>
@@ -175,12 +177,12 @@ const TradeFlowDashboard = () => {
                     <div className="d-flex justify-content-between">
                       <div>
                         <h5 className="mb-1">
-                          Expéditions actives
+                          {t("dashboard.activeShipments")}
                           <span className="badge badge-phoenix badge-phoenix-success rounded-pill fs-9 ms-2">
                             <span className="badge-label">+12.4%</span>
                           </span>
                         </h5>
-                        <h6 className="text-body-tertiary">7 derniers jours</h6>
+                        <h6 className="text-body-tertiary">{t("dashboard.last7Days")}</h6>
                       </div>
                       <h4>47</h4>
                     </div>
@@ -193,14 +195,14 @@ const TradeFlowDashboard = () => {
                       <div className="d-flex align-items-center mb-2">
                         <div className="bullet-item bg-primary me-2" />
                         <h6 className="text-body fw-semibold flex-1 mb-0">
-                          Import
+                          {t("dashboard.import")}
                         </h6>
                         <h6 className="text-body fw-semibold mb-0">68%</h6>
                       </div>
                       <div className="d-flex align-items-center">
                         <div className="bullet-item bg-primary-subtle me-2" />
                         <h6 className="text-body fw-semibold flex-1 mb-0">
-                          Export
+                          {t("dashboard.export")}
                         </h6>
                         <h6 className="text-body fw-semibold mb-0">32%</h6>
                       </div>
@@ -216,12 +218,12 @@ const TradeFlowDashboard = () => {
                     <div className="d-flex justify-content-between">
                       <div>
                         <h5 className="mb-1">
-                          Nouveaux dossiers
+                          {t("dashboard.newCases")}
                           <span className="badge badge-phoenix badge-phoenix-warning rounded-pill fs-9 ms-2">
                             <span className="badge-label">-4.2%</span>
                           </span>
                         </h5>
-                        <h6 className="text-body-tertiary">7 derniers jours</h6>
+                        <h6 className="text-body-tertiary">{t("dashboard.last7Days")}</h6>
                       </div>
                       <h4>12</h4>
                     </div>
@@ -238,25 +240,25 @@ const TradeFlowDashboard = () => {
                   <div className="card-body">
                     <div className="d-flex justify-content-between align-items-start">
                       <div>
-                        <h5 className="mb-2">Documents en attente</h5>
+                        <h5 className="mb-2">{t("dashboard.documentsPending")}</h5>
                         <h6 className="text-body-tertiary">
-                          À traiter aujourd'hui
+                          {t("dashboard.toProcessToday")}
                         </h6>
                       </div>
                       <NavLink
                         to="/documents?filter=pending"
                         className="btn btn-sm btn-phoenix-primary"
                       >
-                        Voir tout
+                        {t("common.viewAll")}
                       </NavLink>
                     </div>
                     <div className="mt-3">
                       {[
-                        { label: "À valider", count: 5, badge: "warning" },
-                        { label: "Manquants", count: 3, badge: "danger" },
-                        { label: "Expirant (7j)", count: 7, badge: "warning" },
+                        { label: t("dashboard.toValidate"), count: 5, badge: "warning" },
+                        { label: t("dashboard.missing"), count: 3, badge: "danger" },
+                        { label: t("dashboard.expiring7d"), count: 7, badge: "warning" },
                         {
-                          label: "Validés ce mois",
+                          label: t("dashboard.validatedThisMonth"),
                           count: 42,
                           badge: "success",
                         },
@@ -289,30 +291,30 @@ const TradeFlowDashboard = () => {
                   <div className="card-body d-flex flex-column">
                     <div className="d-flex justify-content-between align-items-start">
                       <div>
-                        <h5 className="mb-2">Paiements</h5>
-                        <h6 className="text-body-tertiary">Suivi financier</h6>
+                        <h5 className="mb-2">{t("dashboard.payments")}</h5>
+                        <h6 className="text-body-tertiary">{t("dashboard.financialTracking")}</h6>
                       </div>
                       <NavLink
                         to="/finances/paiements"
                         className="btn btn-sm btn-phoenix-primary"
                       >
-                        Voir tout
+                        {t("common.viewAll")}
                       </NavLink>
                     </div>
                     <div className="mt-3 flex-1">
                       {[
                         {
-                          label: "En attente",
+                          label: t("dashboard.pending"),
                           amount: "4 200 000",
                           badge: "warning",
                         },
                         {
-                          label: "En retard",
+                          label: t("dashboard.overdue"),
                           amount: "1 850 000",
                           badge: "danger",
                         },
                         {
-                          label: "Payés (mois)",
+                          label: t("dashboard.paidThisMonth"),
                           amount: "12 400 000",
                           badge: "success",
                         },
@@ -349,9 +351,9 @@ const TradeFlowDashboard = () => {
         <div data-list='{"valueNames":["id","description","partner","status","eta"],"page":5}'>
           <div className="row align-items-end justify-content-between pb-5 g-3">
             <div className="col-auto">
-              <h3>Expéditions récentes</h3>
+              <h3>{t("dashboard.recentShipments")}</h3>
               <p className="text-body-tertiary lh-sm mb-0">
-                Derniers dossiers ouverts et mis à jour
+                {t("dashboard.recentShipmentsDesc")}
               </p>
             </div>
           </div>
@@ -373,10 +375,9 @@ const TradeFlowDashboard = () => {
           <div className="col-12 col-xl-6">
             <div className="me-xl-4">
               <div>
-                <h3>Coûts estimés vs réels</h3>
+                <h3>{t("dashboard.costsEstimated")}</h3>
                 <p className="mb-1 text-body-tertiary">
-                  Comparaison des coûts prévisionnels et des coûts réels par
-                  expédition (FCFA)
+                  {t("dashboard.costsEstimatedDesc")}
                 </p>
               </div>
               <CostProjectionChart />
@@ -384,10 +385,9 @@ const TradeFlowDashboard = () => {
           </div>
           <div className="col-12 col-xl-6">
             <div>
-              <h3>Tendance des statuts</h3>
+              <h3>{t("dashboard.statusTrend")}</h3>
               <p className="mb-1 text-body-tertiary">
-                Évolution mensuelle des expéditions livrées, en transit et
-                bloquées
+                {t("dashboard.statusTrendDesc")}
               </p>
             </div>
             <ShipmentStatusTrendChart />

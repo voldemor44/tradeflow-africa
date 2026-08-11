@@ -1,39 +1,40 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, NavLink } from "react-router-dom";
 import axiosClient from "../axios-client";
+import { useTranslation } from "react-i18next";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  draft: { label: "Brouillon", badge: "secondary", icon: "fa-pencil" },
-  booking: { label: "Réservation", badge: "info", icon: "fa-calendar-check" },
-  goods_ready: { label: "Prêt", badge: "info", icon: "fa-box-open" },
-  in_transit: { label: "En transit", badge: "primary", icon: "fa-route" },
+const getStatusConfig = (t) => ({
+  draft: { label: t("expeditions.statusDraft"), badge: "secondary", icon: "fa-pencil" },
+  booking: { label: t("expeditions.statusBooking"), badge: "info", icon: "fa-calendar-check" },
+  goods_ready: { label: t("expeditions.statusGoodsReady"), badge: "info", icon: "fa-box-open" },
+  in_transit: { label: t("expeditions.statusInTransit"), badge: "primary", icon: "fa-route" },
   at_origin_port: {
-    label: "Port origine",
+    label: t("expeditions.statusAtOrigin"),
     badge: "warning",
     icon: "fa-anchor",
   },
-  on_vessel: { label: "En mer", badge: "primary", icon: "fa-ship" },
-  at_dest_port: { label: "Au port", badge: "warning", icon: "fa-anchor" },
-  customs: { label: "Dédouanement", badge: "warning", icon: "fa-stamp" },
-  cleared: { label: "Dédouané", badge: "success", icon: "fa-check" },
-  out_for_delivery: { label: "En livraison", badge: "info", icon: "fa-truck" },
-  delivered: { label: "Livré", badge: "success", icon: "fa-circle-check" },
+  on_vessel: { label: t("expeditions.statusOnVessel"), badge: "primary", icon: "fa-ship" },
+  at_dest_port: { label: t("expeditions.statusAtDest"), badge: "warning", icon: "fa-anchor" },
+  customs: { label: t("expeditions.statusCustoms"), badge: "warning", icon: "fa-stamp" },
+  cleared: { label: t("expeditions.statusCleared"), badge: "success", icon: "fa-check" },
+  out_for_delivery: { label: t("expeditions.statusOutForDelivery"), badge: "info", icon: "fa-truck" },
+  delivered: { label: t("expeditions.statusDelivered"), badge: "success", icon: "fa-circle-check" },
   on_hold: {
-    label: "Bloquée",
+    label: t("expeditions.statusOnHold"),
     badge: "danger",
     icon: "fa-triangle-exclamation",
   },
-  cancelled: { label: "Annulée", badge: "secondary", icon: "fa-ban" },
-};
+  cancelled: { label: t("expeditions.statusCancelled"), badge: "secondary", icon: "fa-ban" },
+});
 
-const MODE_CONFIG = {
-  sea: { label: "Maritime", icon: "fa-ship", badge: "info" },
-  air: { label: "Aérien", icon: "fa-plane", badge: "primary" },
-  road: { label: "Routier", icon: "fa-truck", badge: "warning" },
-  multi: { label: "Multimodal", icon: "fa-route", badge: "success" },
-};
+const getModeConfig = (t) => ({
+  sea: { label: t("expeditions.modeSea"), icon: "fa-ship", badge: "info" },
+  air: { label: t("expeditions.modeAir"), icon: "fa-plane", badge: "primary" },
+  road: { label: t("expeditions.modeRoad"), icon: "fa-truck", badge: "warning" },
+  multi: { label: t("expeditions.modeMulti"), icon: "fa-route", badge: "success" },
+});
 
 // Flux de statuts dans l'ordre chronologique
 const STATUS_FLOW = [
@@ -104,7 +105,7 @@ const Meta = ({ label, value, className = "" }) => (
 );
 
 // Badge partenaire
-const PartnerBadge = ({ partner, label }) => {
+const PartnerBadge = ({ partner }) => {
   if (!partner) return <span className="text-body-quaternary fs-9">—</span>;
   return (
     <div className="d-flex align-items-center gap-2">
@@ -128,6 +129,8 @@ const PartnerBadge = ({ partner, label }) => {
 
 // Barre de progression du statut
 const StatusTimeline = ({ currentStatus, history }) => {
+  const { t } = useTranslation();
+  const STATUS_CONFIG = getStatusConfig(t);
   const currentIdx = STATUS_FLOW.indexOf(currentStatus);
   const isBlocked = currentStatus === "on_hold";
   const isCancelled = currentStatus === "cancelled";
@@ -196,7 +199,7 @@ const StatusTimeline = ({ currentStatus, history }) => {
       {history?.length > 0 && (
         <div className="mt-4">
           <p className="fs-10 fw-semibold text-body-tertiary text-uppercase mb-3">
-            Historique des changements
+            {t("shipmentDetail.historyTitle")}
           </p>
           <div className="position-relative">
             {[...history].reverse().map((h, i) => {
@@ -246,7 +249,8 @@ const StatusTimeline = ({ currentStatus, history }) => {
                     {h.note && <p className="mb-1 fs-9 text-body">{h.note}</p>}
                     {h.changed_by && (
                       <p className="mb-0 fs-10 text-body-tertiary">
-                        Par <strong>{h.changed_by.full_name}</strong>
+                        {t("shipmentDetail.by")}{" "}
+                        <strong>{h.changed_by.full_name}</strong>
                       </p>
                     )}
                   </div>
@@ -262,6 +266,8 @@ const StatusTimeline = ({ currentStatus, history }) => {
 
 // Modal changement de statut
 const StatusChangeModal = ({ shipment, onDone, onClose }) => {
+  const { t } = useTranslation();
+  const STATUS_CONFIG = getStatusConfig(t);
   const [newStatus, setNewStatus] = useState("");
   const [note, setNote] = useState("");
   const [location, setLocation] = useState("");
@@ -274,7 +280,7 @@ const StatusChangeModal = ({ shipment, onDone, onClose }) => {
 
   const submit = () => {
     if (!newStatus) {
-      setError("Choisissez un statut.");
+      setError(t("shipmentDetail.errStatusRequired"));
       return;
     }
     setLoading(true);
@@ -287,7 +293,7 @@ const StatusChangeModal = ({ shipment, onDone, onClose }) => {
       .then(({ data }) => onDone(data))
       .catch((err) =>
         setError(
-          err.response?.data?.detail ?? "Erreur lors du changement de statut.",
+          err.response?.data?.detail ?? t("shipmentDetail.errStatusChange"),
         ),
       )
       .finally(() => setLoading(false));
@@ -303,14 +309,15 @@ const StatusChangeModal = ({ shipment, onDone, onClose }) => {
           <div className="modal-header">
             <h5 className="modal-title">
               <span className="fas fa-arrow-right-arrow-left me-2 text-primary" />
-              Changer le statut
+              {t("shipmentDetail.changeStatusTitle")}
             </h5>
             <button className="btn-close" onClick={onClose} />
           </div>
           <div className="modal-body">
             <div className="mb-3">
               <label className="form-label fs-9 fw-semibold">
-                Nouveau statut <span className="text-danger">*</span>
+                {t("shipmentDetail.newStatus")}{" "}
+                <span className="text-danger">*</span>
               </label>
               <div className="row g-2">
                 {availableStatuses.map(([k, v]) => (
@@ -335,24 +342,24 @@ const StatusChangeModal = ({ shipment, onDone, onClose }) => {
             </div>
             <div className="mb-3">
               <label className="form-label fs-9 fw-semibold">
-                Localisation (optionnel)
+                {t("shipmentDetail.locationOptional")}
               </label>
               <input
                 type="text"
                 className="form-control fs-9"
-                placeholder="Ex : Port de Cotonou, Douane de Lomé…"
+                placeholder={t("shipmentDetail.locationPlaceholder")}
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
               />
             </div>
             <div className="mb-3">
               <label className="form-label fs-9 fw-semibold">
-                Note (optionnel)
+                {t("shipmentDetail.noteOptional")}
               </label>
               <textarea
                 className="form-control fs-9"
                 rows={2}
-                placeholder="Informations complémentaires…"
+                placeholder={t("shipmentDetail.notePlaceholder")}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
@@ -367,7 +374,7 @@ const StatusChangeModal = ({ shipment, onDone, onClose }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Annuler
+              {t("shipmentDetail.cancel")}
             </button>
             <button
               className="btn btn-primary"
@@ -377,10 +384,10 @@ const StatusChangeModal = ({ shipment, onDone, onClose }) => {
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
-                  Traitement…
+                  {t("shipmentDetail.processing")}
                 </>
               ) : (
-                "Confirmer"
+                t("shipmentDetail.confirm")
               )}
             </button>
           </div>
@@ -393,6 +400,7 @@ const StatusChangeModal = ({ shipment, onDone, onClose }) => {
 // ─── COMPOSANT PRINCIPAL ───────────────────────────────────
 
 export default function ShipmentDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -413,9 +421,9 @@ export default function ShipmentDetailPage() {
         setShipment(s);
         setDocuments(d.results ?? d);
       })
-      .catch(() => setError("Impossible de charger cette expédition."))
+      .catch(() => setError(t("shipmentDetail.loadError")))
       .finally(() => setLoading(false));
-  }, [id]);
+  }, [id, t]);
 
   const onStatusChanged = (updated) => {
     setShipment(updated);
@@ -431,7 +439,7 @@ export default function ShipmentDetailPage() {
       >
         <div className="text-center text-body-tertiary">
           <span className="spinner-border text-primary mb-3 d-block mx-auto" />
-          Chargement du dossier…
+          {t("shipmentDetail.loadingFile")}
         </div>
       </div>
     );
@@ -445,18 +453,21 @@ export default function ShipmentDetailPage() {
         <div className="text-center">
           <span className="fas fa-triangle-exclamation text-danger fs-3 d-block mb-3" />
           <p className="text-body-tertiary mb-3">
-            {error ?? "Dossier introuvable."}
+            {error ?? t("shipmentDetail.notFound")}
           </p>
           <button
             className="btn btn-phoenix-secondary"
             onClick={() => navigate("/expeditions")}
           >
             <span className="fas fa-arrow-left me-2" />
-            Retour aux expéditions
+            {t("shipmentDetail.backToExpeditions")}
           </button>
         </div>
       </div>
     );
+
+  const STATUS_CONFIG = getStatusConfig(t);
+  const MODE_CONFIG = getModeConfig(t);
 
   const st = STATUS_CONFIG[shipment.status] ?? {
     badge: "secondary",
@@ -483,7 +494,7 @@ export default function ShipmentDetailPage() {
             <ol className="breadcrumb fs-10 mb-0">
               <li className="breadcrumb-item">
                 <NavLink to="/expeditions" className="text-body-tertiary">
-                  Expéditions
+                  {t("expeditions.title")}
                 </NavLink>
               </li>
               <li className="breadcrumb-item active text-body">
@@ -505,18 +516,19 @@ export default function ShipmentDetailPage() {
                 {shipment.is_archived && (
                   <span className="badge bg-body-secondary text-body fs-9">
                     <span className="fas fa-archive me-1" />
-                    Archivée
+                    {t("shipmentDetail.archived")}
                   </span>
                 )}
               </div>
               <p className="text-body-tertiary mb-0 fs-9">
                 <span className={`fas ${mode.icon} me-1 text-${mode.badge}`} />
-                {mode.label} · {shipment.direction_display} · Incoterm{" "}
-                {shipment.incoterm}
+                {mode.label} · {shipment.direction_display} ·{" "}
+                {t("shipmentDetail.incoterm")} {shipment.incoterm}
                 <span className="ms-3 text-body-quaternary">
-                  Créé le {fmtDate(shipment.created_at)}
+                  {t("shipmentDetail.createdOn")}{" "}
+                  {fmtDate(shipment.created_at)}
                   {shipment.created_by &&
-                    ` par ${shipment.created_by.full_name}`}
+                    ` ${t("shipmentDetail.by")} ${shipment.created_by.full_name}`}
                 </span>
               </p>
             </div>
@@ -528,7 +540,7 @@ export default function ShipmentDetailPage() {
                 to={`/documents?shipment=${shipment.id}`}
               >
                 <span className="fas fa-file-alt me-2" />
-                Documents
+                {t("shipmentDetail.documents")}
                 {pendingDocs > 0 && (
                   <span className="ms-2 badge badge-phoenix badge-phoenix-warning">
                     {pendingDocs}
@@ -540,14 +552,14 @@ export default function ShipmentDetailPage() {
                 to={`/tracking/carte?shipment=${shipment.id}`}
               >
                 <span className="fas fa-map-marker-alt me-2" />
-                Carte
+                {t("shipmentDetail.map")}
               </NavLink>
               <button
                 className="btn btn-phoenix-secondary btn-sm"
                 onClick={() => setChangingStatus(true)}
               >
                 <span className="fas fa-arrow-right-arrow-left me-2" />
-                Changer statut
+                {t("shipmentDetail.changeStatus")}
               </button>
               <div className="dropdown">
                 <button
@@ -559,11 +571,11 @@ export default function ShipmentDetailPage() {
                 <div className="dropdown-menu dropdown-menu-end py-2">
                   <button className="dropdown-item">
                     <span className="fas fa-edit me-2 text-body-tertiary" />
-                    Modifier
+                    {t("shipmentDetail.edit")}
                   </button>
                   <button className="dropdown-item text-danger">
                     <span className="fas fa-archive me-2" />
-                    Archiver
+                    {t("shipmentDetail.archive")}
                   </button>
                 </div>
               </div>
@@ -580,8 +592,9 @@ export default function ShipmentDetailPage() {
               <div className="alert alert-danger d-flex align-items-center gap-2 py-2 mb-0">
                 <span className="fas fa-triangle-exclamation flex-shrink-0" />
                 <span className="fs-9">
-                  Cette expédition est <strong>bloquée</strong>. Une
-                  intervention est requise.
+                  {t("shipmentDetail.onHoldAlert1")}{" "}
+                  <strong>{t("expeditions.statusOnHold")}</strong>.{" "}
+                  {t("shipmentDetail.onHoldAlert2")}
                 </span>
               </div>
             )}
@@ -590,14 +603,15 @@ export default function ShipmentDetailPage() {
                 <span className="fas fa-clock flex-shrink-0" />
                 <span className="fs-9">
                   <strong>
-                    {pendingDocs} document{pendingDocs > 1 ? "s" : ""}
+                    {pendingDocs} {t("shipmentDetail.document")}
+                    {pendingDocs > 1 ? "s" : ""}
                   </strong>{" "}
-                  en attente de validation.{" "}
+                  {t("shipmentDetail.pendingValidation")}{" "}
                   <NavLink
                     to={`/documents?shipment=${shipment.id}&status=pending`}
                     className="fw-semibold"
                   >
-                    Valider maintenant
+                    {t("shipmentDetail.validateNow")}
                   </NavLink>
                 </span>
               </div>
@@ -607,9 +621,11 @@ export default function ShipmentDetailPage() {
                 <span className="fas fa-calendar-xmark flex-shrink-0" />
                 <span className="fs-9">
                   <strong>
-                    {expiringDocs} document{expiringDocs > 1 ? "s" : ""}
+                    {expiringDocs} {t("shipmentDetail.document")}
+                    {expiringDocs > 1 ? "s" : ""}
                   </strong>{" "}
-                  expire{expiringDocs > 1 ? "nt" : ""} dans moins de 7 jours.
+                  {t("shipmentDetail.expire")}
+                  {expiringDocs > 1 ? "nt" : ""} {t("shipmentDetail.inLessThan7Days")}
                 </span>
               </div>
             )}
@@ -620,7 +636,7 @@ export default function ShipmentDetailPage() {
           {/* ── COLONNE GAUCHE ──────────────────────────── */}
           <div className="col-12 col-xl-8">
             {/* Progression / Timeline */}
-            <Section icon="fa-route" title="Progression du dossier">
+            <Section icon="fa-route" title={t("shipmentDetail.progression")}>
               <StatusTimeline
                 currentStatus={shipment.status}
                 history={shipment.status_history}
@@ -628,16 +644,16 @@ export default function ShipmentDetailPage() {
             </Section>
 
             {/* Marchandise */}
-            <Section icon="fa-box" title="Marchandise">
+            <Section icon="fa-box" title={t("shipmentDetail.goods")}>
               <div className="row g-0">
                 <div className="col-12 col-md-6 pe-md-4">
                   <Meta
-                    label="Description"
+                    label={t("shipmentDetail.metaDescription")}
                     value={shipment.goods_description}
                   />
-                  <Meta label="Code HS" value={shipment.hs_code} />
+                  <Meta label={t("shipmentDetail.metaHsCode")} value={shipment.hs_code} />
                   <Meta
-                    label="Quantité"
+                    label={t("shipmentDetail.metaQuantity")}
                     value={
                       shipment.quantity
                         ? `${fmtNum(shipment.quantity)} ${shipment.unit ?? ""}`
@@ -647,7 +663,7 @@ export default function ShipmentDetailPage() {
                 </div>
                 <div className="col-12 col-md-6 ps-md-4">
                   <Meta
-                    label="Poids brut"
+                    label={t("shipmentDetail.metaGrossWeight")}
                     value={
                       shipment.gross_weight_kg
                         ? `${fmtNum(shipment.gross_weight_kg)} kg`
@@ -655,7 +671,7 @@ export default function ShipmentDetailPage() {
                     }
                   />
                   <Meta
-                    label="Volume"
+                    label={t("shipmentDetail.metaVolume")}
                     value={
                       shipment.volume_m3
                         ? `${fmtNum(shipment.volume_m3)} m³`
@@ -663,7 +679,7 @@ export default function ShipmentDetailPage() {
                     }
                   />
                   <Meta
-                    label="Valeur déclarée"
+                    label={t("shipmentDetail.metaDeclaredValue")}
                     value={
                       shipment.declared_value ? (
                         <span className="fw-bold">
@@ -692,11 +708,11 @@ export default function ShipmentDetailPage() {
             </Section>
 
             {/* Transport */}
-            <Section icon="fa-ship" title="Transport & Dates">
+            <Section icon="fa-ship" title={t("shipmentDetail.transportDates")}>
               <div className="row g-0">
                 <div className="col-12 col-md-6 pe-md-4">
                   <Meta
-                    label="Mode"
+                    label={t("shipmentDetail.metaMode")}
                     value={
                       <>
                         <span
@@ -707,30 +723,30 @@ export default function ShipmentDetailPage() {
                     }
                   />
                   <Meta
-                    label="Incoterm"
+                    label={t("shipmentDetail.incoterm")}
                     value={
                       <span className="badge bg-body-secondary text-body fw-bold">
                         {shipment.incoterm}
                       </span>
                     }
                   />
-                  <Meta label="Direction" value={shipment.direction_display} />
+                  <Meta label={t("shipmentDetail.metaDirection")} value={shipment.direction_display} />
                 </div>
                 <div className="col-12 col-md-6 ps-md-4">
                   <Meta
-                    label="ETD estimée"
+                    label={t("shipmentDetail.metaEtdEstimated")}
                     value={fmtDate(shipment.estimated_departure)}
                   />
                   <Meta
-                    label="ETD réelle"
+                    label={t("shipmentDetail.metaEtdActual")}
                     value={fmtDate(shipment.actual_departure)}
                   />
                   <Meta
-                    label="ETA estimée"
+                    label={t("shipmentDetail.metaEtaEstimated")}
                     value={fmtDate(shipment.estimated_arrival)}
                   />
                   <Meta
-                    label="ETA réelle"
+                    label={t("shipmentDetail.metaEtaActual")}
                     value={fmtDate(shipment.actual_arrival)}
                   />
                 </div>
@@ -739,13 +755,13 @@ export default function ShipmentDetailPage() {
                 <div className="row g-0 mt-2">
                   <div className="col-12 col-md-6 pe-md-4">
                     <Meta
-                      label="Début dédouanement"
+                      label={t("shipmentDetail.metaCustomsStart")}
                       value={fmtDate(shipment.customs_start)}
                     />
                   </div>
                   <div className="col-12 col-md-6 ps-md-4">
                     <Meta
-                      label="Fin dédouanement"
+                      label={t("shipmentDetail.metaCustomsEnd")}
                       value={fmtDate(shipment.customs_end)}
                     />
                   </div>
@@ -754,7 +770,7 @@ export default function ShipmentDetailPage() {
             </Section>
 
             {/* Route */}
-            <Section icon="fa-map-marked-alt" title="Route">
+            <Section icon="fa-map-marked-alt" title={t("shipmentDetail.route")}>
               <div className="d-flex align-items-center gap-4 flex-wrap">
                 {/* Origine */}
                 <div className="text-center">
@@ -818,7 +834,7 @@ export default function ShipmentDetailPage() {
 
             {/* Notes */}
             {shipment.notes && (
-              <Section icon="fa-note-sticky" title="Notes internes">
+              <Section icon="fa-note-sticky" title={t("shipmentDetail.internalNotes")}>
                 <p className="fs-9 text-body mb-0">{shipment.notes}</p>
               </Section>
             )}
@@ -838,7 +854,7 @@ export default function ShipmentDetailPage() {
                   </div>
                   <div>
                     <p className="mb-0 fs-10 text-body-tertiary">
-                      Statut actuel
+                      {t("shipmentDetail.currentStatus")}
                     </p>
                     <p className="mb-0 fw-bold fs-8">{st.label}</p>
                   </div>
@@ -846,13 +862,13 @@ export default function ShipmentDetailPage() {
                 <div className="row g-3 text-center">
                   {[
                     {
-                      label: "Documents",
+                      label: t("shipmentDetail.documents"),
                       value: shipment.documents_count ?? 0,
                       icon: "fa-file-alt",
                       badge: "primary",
                     },
                     {
-                      label: "En attente",
+                      label: t("shipmentDetail.pending"),
                       value: shipment.pending_documents_count ?? 0,
                       icon: "fa-clock",
                       badge: "warning",
@@ -874,21 +890,21 @@ export default function ShipmentDetailPage() {
                   to={`/documents?shipment=${shipment.id}`}
                 >
                   <span className="fas fa-file-alt me-2" />
-                  Gérer les documents
+                  {t("shipmentDetail.manageDocuments")}
                 </NavLink>
               </div>
             </div>
 
             {/* Partenaires */}
-            <Section icon="fa-handshake" title="Partenaires">
+            <Section icon="fa-handshake" title={t("shipmentDetail.partners")}>
               <div className="d-flex flex-column gap-4">
                 {[
-                  { label: "Transitaire", partner: shipment.freight_forwarder },
+                  { label: t("shipmentDetail.forwarder"), partner: shipment.freight_forwarder },
                   {
-                    label: "Commissionnaire",
+                    label: t("shipmentDetail.commissionAgent"),
                     partner: shipment.customs_broker,
                   },
-                  { label: "Fournisseur", partner: shipment.supplier },
+                  { label: t("shipmentDetail.supplier"), partner: shipment.supplier },
                 ].map(({ label, partner }) => (
                   <div key={label}>
                     <p className="fs-10 fw-semibold text-body-tertiary text-uppercase mb-2">
@@ -901,10 +917,10 @@ export default function ShipmentDetailPage() {
             </Section>
 
             {/* Équipe */}
-            <Section icon="fa-users" title="Équipe">
+            <Section icon="fa-users" title={t("shipmentDetail.team")}>
               {[
-                { label: "Créé par", user: shipment.created_by },
-                { label: "Assigné à", user: shipment.assigned_to },
+                { label: t("shipmentDetail.createdBy"), user: shipment.created_by },
+                { label: t("shipmentDetail.assignedTo"), user: shipment.assigned_to },
               ].map(({ label, user }) => (
                 <div
                   key={label}
@@ -929,7 +945,7 @@ export default function ShipmentDetailPage() {
               ))}
               {shipment.closed_at && (
                 <div className="d-flex justify-content-between py-2">
-                  <span className="fs-9 text-body-tertiary">Clôturé le</span>
+                  <span className="fs-9 text-body-tertiary">{t("shipmentDetail.closedOn")}</span>
                   <span className="fs-9 fw-semibold">
                     {fmtDate(shipment.closed_at)}
                   </span>
@@ -941,13 +957,13 @@ export default function ShipmentDetailPage() {
             {documents.length > 0 && (
               <Section
                 icon="fa-file-alt"
-                title="Documents récents"
+                title={t("shipmentDetail.recentDocuments")}
                 action={
                   <NavLink
                     className="btn btn-sm btn-phoenix-secondary"
                     to={`/documents?shipment=${shipment.id}`}
                   >
-                    Voir tous
+                    {t("shipmentDetail.viewAll")}
                   </NavLink>
                 }
               >

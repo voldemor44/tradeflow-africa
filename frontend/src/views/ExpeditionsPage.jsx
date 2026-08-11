@@ -3,41 +3,42 @@ import NewShipmentModal from "../components/Newshipmentmodal";
 import EditShipmentModal from "../components/Editshipmentmodal";
 import { NavLink } from "react-router-dom";
 import axiosClient from "../axios-client";
+import { useTranslation } from "react-i18next";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
-const STATUS_CONFIG = {
-  draft: { label: "Brouillon", badge: "secondary" },
-  booking: { label: "Réservation", badge: "info" },
-  goods_ready: { label: "Prêt", badge: "info" },
-  in_transit: { label: "En transit", badge: "primary" },
-  at_origin_port: { label: "Port origine", badge: "warning" },
-  on_vessel: { label: "En mer", badge: "primary" },
-  at_dest_port: { label: "Au port", badge: "warning" },
-  customs: { label: "Dédouanement", badge: "warning" },
-  cleared: { label: "Dédouané", badge: "success" },
-  out_for_delivery: { label: "En livraison", badge: "info" },
-  delivered: { label: "Livré", badge: "success" },
-  on_hold: { label: "Bloquée", badge: "danger" },
-  cancelled: { label: "Annulée", badge: "secondary" },
-};
+const getStatusConfig = (t) => ({
+  draft: { label: t("expeditions.statusDraft"), badge: "secondary" },
+  booking: { label: t("expeditions.statusBooking"), badge: "info" },
+  goods_ready: { label: t("expeditions.statusGoodsReady"), badge: "info" },
+  in_transit: { label: t("expeditions.statusInTransit"), badge: "primary" },
+  at_origin_port: { label: t("expeditions.statusAtOrigin"), badge: "warning" },
+  on_vessel: { label: t("expeditions.statusOnVessel"), badge: "primary" },
+  at_dest_port: { label: t("expeditions.statusAtDest"), badge: "warning" },
+  customs: { label: t("expeditions.statusCustoms"), badge: "warning" },
+  cleared: { label: t("expeditions.statusCleared"), badge: "success" },
+  out_for_delivery: { label: t("expeditions.statusOutForDelivery"), badge: "info" },
+  delivered: { label: t("expeditions.statusDelivered"), badge: "success" },
+  on_hold: { label: t("expeditions.statusOnHold"), badge: "danger" },
+  cancelled: { label: t("expeditions.statusCancelled"), badge: "secondary" },
+});
 
-const MODE_CONFIG = {
-  sea: { label: "Maritime", badge: "info", icon: "fa-ship" },
-  air: { label: "Aérien", badge: "primary", icon: "fa-plane" },
-  road: { label: "Routier", badge: "warning", icon: "fa-truck" },
-  multi: { label: "Multimodal", badge: "success", icon: "fa-route" },
-};
+const getModeConfig = (t) => ({
+  sea: { label: t("expeditions.modeSea"), badge: "info", icon: "fa-ship" },
+  air: { label: t("expeditions.modeAir"), badge: "primary", icon: "fa-plane" },
+  road: { label: t("expeditions.modeRoad"), badge: "warning", icon: "fa-truck" },
+  multi: { label: t("expeditions.modeMulti"), badge: "success", icon: "fa-route" },
+});
 
-const STATUS_PILLS = [
-  { key: "in_transit", label: "En transit" },
-  { key: "on_vessel", label: "En mer" },
-  { key: "at_dest_port", label: "Au port" },
-  { key: "customs", label: "Dédouanement" },
-  { key: "on_hold", label: "Bloquées" },
-  { key: "delivered", label: "Livrées" },
-  { key: "booking", label: "Réservation" },
-  { key: "draft", label: "Brouillons" },
+const getStatusPills = (t) => [
+  { key: "in_transit", label: t("expeditions.statusInTransit") },
+  { key: "on_vessel", label: t("expeditions.statusOnVessel") },
+  { key: "at_dest_port", label: t("expeditions.statusAtDest") },
+  { key: "customs", label: t("expeditions.statusCustoms") },
+  { key: "on_hold", label: t("expeditions.statusOnHold") },
+  { key: "delivered", label: t("expeditions.statusDelivered") },
+  { key: "booking", label: t("expeditions.statusBooking") },
+  { key: "draft", label: t("expeditions.statusDraft") },
 ];
 
 const PAGE_SIZE = 10;
@@ -69,20 +70,20 @@ const fmtDate = (iso) => {
   return `${d} ${mo[+m - 1]} ${y}`;
 };
 
-const exportCSV = (rows) => {
+const exportCSV = (rows, MODE_CONFIG, t) => {
   const h = [
-    "Référence",
-    "Description",
-    "Origine",
-    "Destination",
-    "Transitaire",
-    "Mode",
-    "Incoterm",
-    "Statut",
-    "ETA",
-    "Valeur",
-    "Devise",
-    "Créé le",
+    t("expeditions.csvRef"),
+    t("expeditions.csvDesc"),
+    t("expeditions.csvOrigin"),
+    t("expeditions.csvDestination"),
+    t("expeditions.csvForwarder"),
+    t("expeditions.csvMode"),
+    t("expeditions.csvIncoterm"),
+    t("expeditions.csvStatus"),
+    t("expeditions.csvETA"),
+    t("expeditions.csvValue"),
+    t("expeditions.csvCurrency"),
+    t("expeditions.csvCreated"),
   ];
   const csv = [
     h,
@@ -177,8 +178,8 @@ const reducer = (state, action) => {
 
 // ─── SOUS-COMPOSANTS ───────────────────────────────────────
 
-const StatusBadge = ({ status, display }) => {
-  const c = STATUS_CONFIG[status] ?? { badge: "secondary", label: status };
+const StatusBadge = ({ status, display, config }) => {
+  const c = config[status] ?? { badge: "secondary", label: status };
   return (
     <span className={`badge badge-phoenix badge-phoenix-${c.badge} fs-10`}>
       {display ?? c.label}
@@ -186,8 +187,8 @@ const StatusBadge = ({ status, display }) => {
   );
 };
 
-const ModeBadge = ({ mode, display }) => {
-  const c = MODE_CONFIG[mode] ?? {
+const ModeBadge = ({ mode, display, config }) => {
+  const c = config[mode] ?? {
     badge: "secondary",
     icon: "fa-box",
     label: mode,
@@ -238,6 +239,10 @@ const SkeletonRow = () => (
 // ─── COMPOSANT ─────────────────────────────────────────────
 
 export default function ExpeditionsPage() {
+  const { t } = useTranslation();
+  const STATUS_CONFIG = getStatusConfig(t);
+  const MODE_CONFIG = getModeConfig(t);
+  const STATUS_PILLS = getStatusPills(t);
   const [state, dispatch] = useReducer(reducer, init);
   const {
     search,
@@ -284,7 +289,7 @@ export default function ExpeditionsPage() {
         })
         .catch((err) => {
           if (!cancelled)
-            setError(err.response?.data?.detail ?? "Erreur de chargement.");
+            setError(err.response?.data?.detail ?? t("expeditions.errorLoad"));
         })
         .finally(() => {
           if (!cancelled) setLoading(false);
@@ -304,7 +309,7 @@ export default function ExpeditionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, status, mode, is_archived, dateFrom, dateTo, ordering]);
+  }, [search, status, mode, is_archived, dateFrom, dateTo, ordering, t]);
 
   const totalPages = Math.max(1, Math.ceil(shipments.length / PAGE_SIZE));
   const pagedShipments = shipments.slice(
@@ -364,12 +369,12 @@ export default function ExpeditionsPage() {
         {/* EN-TÊTE */}
         <div className="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
           <div>
-            <h2 className="mb-1">Expéditions</h2>
+            <h2 className="mb-1">{t("expeditions.title")}</h2>
             <p className="text-body-tertiary mb-0 fs-9">
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
-                  Chargement…
+                  {t("expeditions.loading")}
                 </>
               ) : (
                 <>
@@ -381,7 +386,7 @@ export default function ExpeditionsPage() {
                   className="btn btn-link p-0 ms-2 fs-9 text-danger"
                   onClick={() => dispatch({ type: "RESET" })}
                 >
-                  Réinitialiser les filtres
+                  {t("expeditions.resetFilters")}
                 </button>
               )}
             </p>
@@ -392,7 +397,7 @@ export default function ExpeditionsPage() {
               onClick={() => f("is_archived", !is_archived)}
             >
               <span className="fas fa-archive me-2" />
-              {is_archived ? "Voir actives" : "Archives"}
+              {is_archived ? t("expeditions.viewActive") : t("expeditions.archives")}
             </button>
             <button
               className="btn btn-primary"
@@ -400,7 +405,7 @@ export default function ExpeditionsPage() {
               data-bs-target="#newShipmentModal"
             >
               <span className="fas fa-plus me-2" />
-              Nouvelle expédition
+              {t("expeditions.newExpedition")}
             </button>
           </div>
         </div>
@@ -419,7 +424,7 @@ export default function ExpeditionsPage() {
             className={`btn btn-sm ${!status ? "btn-primary" : "btn-phoenix-secondary"}`}
             onClick={() => f("status", "")}
           >
-            Tous{" "}
+            {t("expeditions.all")}{" "}
             <span className="ms-2 badge bg-body-secondary text-body fw-bold">
               {total}
             </span>
@@ -449,7 +454,7 @@ export default function ExpeditionsPage() {
               <input
                 className="form-control search-input form-control-sm"
                 type="search"
-                placeholder="Référence, marchandise, partenaire, ville…"
+                placeholder={t("expeditions.searchPlaceholder")}
                 value={search}
                 onChange={(e) => f("search", e.target.value)}
               />
@@ -461,7 +466,7 @@ export default function ExpeditionsPage() {
             onClick={() => dispatch({ type: "TOGGLE_FILTERS" })}
           >
             <span className="fas fa-sliders-h me-2" />
-            Filtres
+            {t("expeditions.filters")}
             {hasFilters && (
               <span className="ms-2 badge badge-phoenix badge-phoenix-danger">
                 !
@@ -471,27 +476,29 @@ export default function ExpeditionsPage() {
           {selected.length > 0 ? (
             <div className="d-flex align-items-center gap-2 ms-auto">
               <span className="fs-9 text-body-tertiary">
-                {selected.length} sélectionné{selected.length > 1 ? "s" : ""}
+                {selected.length > 1
+                  ? t("expeditions.selectedCountPlural", { count: selected.length })
+                  : t("expeditions.selectedCount", { count: selected.length })}
               </span>
               <button
                 className="btn btn-sm btn-phoenix-secondary"
-                onClick={() => exportCSV(selectedRows)}
+                onClick={() => exportCSV(selectedRows, MODE_CONFIG, t)}
               >
                 <span className="fas fa-download me-1" />
-                Exporter
+                {t("expeditions.export")}
               </button>
               <button
                 className="btn btn-sm btn-phoenix-danger"
                 onClick={() => dispatch({ type: "CLEAR_SELECTION" })}
               >
-                Désélectionner
+                {t("expeditions.deselect")}
               </button>
             </div>
           ) : (
             <div className="ms-auto d-flex gap-2">
               <button
                 className="btn btn-sm btn-phoenix-secondary"
-                onClick={() => exportCSV(shipments)}
+                onClick={() => exportCSV(shipments, MODE_CONFIG, t)}
               >
                 <span className="fas fa-file-csv me-2" />
                 CSV
@@ -514,14 +521,14 @@ export default function ExpeditionsPage() {
               <div className="row g-3 align-items-end">
                 <div className="col-12 col-sm-6 col-lg-3">
                   <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
-                    STATUT
+                    {t("expeditions.status")}
                   </label>
                   <select
                     className="form-select form-select-sm"
                     value={status}
                     onChange={(e) => f("status", e.target.value)}
                   >
-                    <option value="">Tous les statuts</option>
+                    <option value="">{t("expeditions.allStatuses")}</option>
                     {Object.entries(STATUS_CONFIG).map(([v, { label }]) => (
                       <option key={v} value={v}>
                         {label}
@@ -531,14 +538,14 @@ export default function ExpeditionsPage() {
                 </div>
                 <div className="col-12 col-sm-6 col-lg-2">
                   <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
-                    MODE
+                    {t("expeditions.mode")}
                   </label>
                   <select
                     className="form-select form-select-sm"
                     value={mode}
                     onChange={(e) => f("mode", e.target.value)}
                   >
-                    <option value="">Tous les modes</option>
+                    <option value="">{t("expeditions.allModes")}</option>
                     {Object.entries(MODE_CONFIG).map(([v, { label }]) => (
                       <option key={v} value={v}>
                         {label}
@@ -548,7 +555,7 @@ export default function ExpeditionsPage() {
                 </div>
                 <div className="col-12 col-sm-6 col-lg-2">
                   <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
-                    ETA DU
+                    {t("expeditions.etaFrom")}
                   </label>
                   <input
                     type="date"
@@ -559,7 +566,7 @@ export default function ExpeditionsPage() {
                 </div>
                 <div className="col-12 col-sm-6 col-lg-2">
                   <label className="form-label fs-10 fw-semibold text-body-tertiary mb-1">
-                    AU
+                    {t("expeditions.etaTo")}
                   </label>
                   <input
                     type="date"
@@ -574,7 +581,7 @@ export default function ExpeditionsPage() {
                     onClick={() => dispatch({ type: "RESET" })}
                   >
                     <span className="fas fa-times me-1" />
-                    Réinitialiser
+                    {t("expeditions.reset")}
                   </button>
                 </div>
               </div>
@@ -609,55 +616,55 @@ export default function ExpeditionsPage() {
                     </th>
                     <SortTh
                       col="reference"
-                      label="RÉFÉRENCE"
+                      label={t("expeditions.reference")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col="goods_description"
-                      label="MARCHANDISE"
+                      label={t("expeditions.goods")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col={null}
-                      label="ROUTE"
+                      label={t("expeditions.route")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col={null}
-                      label="TRANSITAIRE"
+                      label={t("expeditions.forwarder")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col="transport_mode"
-                      label="MODE"
+                      label={t("expeditions.mode")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col={null}
-                      label="INCOT."
+                      label={t("expeditions.incoterm")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col="status"
-                      label="STATUT"
+                      label={t("expeditions.status")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col="estimated_arrival"
-                      label="ETA"
+                      label={t("expeditions.eta")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                     />
                     <SortTh
                       col="declared_value"
-                      label="VALEUR (FCFA)"
+                      label={t("expeditions.value")}
                       ordering={ordering}
                       onSort={(c) => dispatch({ type: "SORT", col: c })}
                       className="text-end pe-3"
@@ -678,8 +685,8 @@ export default function ExpeditionsPage() {
                       >
                         <span className="fas fa-inbox fs-5 d-block mb-2 opacity-50" />
                         {hasFilters
-                          ? "Aucun résultat pour ces critères."
-                          : "Aucune expédition pour le moment."}
+                          ? t("expeditions.noResult")
+                          : t("expeditions.noExpeditions")}
                       </td>
                     </tr>
                   ) : (
@@ -764,6 +771,7 @@ export default function ExpeditionsPage() {
                           <ModeBadge
                             mode={s.transport_mode}
                             display={s.transport_mode_display}
+                            config={MODE_CONFIG}
                           />
                         </td>
                         <td className="align-middle">
@@ -775,6 +783,7 @@ export default function ExpeditionsPage() {
                           <StatusBadge
                             status={s.status}
                             display={s.status_display}
+                            config={STATUS_CONFIG}
                           />
                         </td>
                         <td className="align-middle white-space-nowrap">
@@ -806,7 +815,7 @@ export default function ExpeditionsPage() {
                               to={`/expeditions/${s.id}`}
                             >
                               <span className="fas fa-eye me-2 text-body-tertiary" />
-                              Voir le dossier
+                              {t("expeditions.viewFile")}
                             </NavLink>
                             <button
                               className="dropdown-item w-100 text-start border-0 bg-transparent"
@@ -815,21 +824,21 @@ export default function ExpeditionsPage() {
                               }
                             >
                               <span className="fas fa-edit me-2 text-body-tertiary" />
-                              Modifier
+                              {t("expeditions.edit")}
                             </button>
                             <NavLink
                               className="dropdown-item"
                               to={`/documents?shipment=${s.id}`}
                             >
                               <span className="fas fa-file-alt me-2 text-body-tertiary" />
-                              Documents
+                              {t("expeditions.documents")}
                             </NavLink>
                             <NavLink
                               className="dropdown-item"
                               to={`/tracking/carte?shipment=${s.id}`}
                             >
                               <span className="fas fa-map-marker-alt me-2 text-body-tertiary" />
-                              Sur la carte
+                              {t("expeditions.onMap")}
                             </NavLink>
                             {!s.is_archived && (
                               <>
@@ -839,7 +848,7 @@ export default function ExpeditionsPage() {
                                   onClick={() => archive(s.id)}
                                 >
                                   <span className="fas fa-archive me-2" />
-                                  Archiver
+                                  {t("expeditions.archive")}
                                 </button>
                               </>
                             )}
@@ -857,9 +866,11 @@ export default function ExpeditionsPage() {
           {!loading && total > PAGE_SIZE && (
             <div className="card-footer d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
               <p className="mb-0 fs-9 text-body-tertiary">
-                Affichage de <strong>{(page - 1) * PAGE_SIZE + 1}</strong> à{" "}
-                <strong>{Math.min(page * PAGE_SIZE, total)}</strong> sur{" "}
-                <strong>{total}</strong> dossiers
+                {t("expeditions.displayRange", {
+                  from: (page - 1) * PAGE_SIZE + 1,
+                  to: Math.min(page * PAGE_SIZE, total),
+                  total,
+                })}
               </p>
               <div className="d-flex align-items-center gap-1">
                 <button

@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 export default function NotFoundPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   return (
@@ -24,13 +26,12 @@ export default function NotFoundPage() {
 
         {/* Titre */}
         <h4 className="fw-bold text-body-highlight mt-2 mb-3">
-          Page introuvable
+          {t("notFound.title")}
         </h4>
 
         {/* Description */}
         <p className="text-body-tertiary fs-9 mb-5">
-          La page que vous tentez d'atteindre n'existe pas ou a été déplacée.
-          Vérifiez l'URL ou revenez au tableau de bord.
+          {t("notFound.description")}
         </p>
 
         {/* Actions */}
@@ -40,25 +41,25 @@ export default function NotFoundPage() {
             onClick={() => navigate(-1)}
           >
             <span className="fas fa-arrow-left me-2" />
-            Retour
+            {t("notFound.back")}
           </button>
           <button
             className="btn btn-primary"
             onClick={() => navigate("/dashboard")}
           >
             <span className="fas fa-gauge me-2" />
-            Tableau de bord
+            {t("notFound.dashboard")}
           </button>
         </div>
 
         {/* Lien expéditions */}
         <p className="mt-4 mb-0 fs-10 text-body-tertiary">
-          Vous cherchez quelque chose ?{" "}
+          {t("notFound.lookingFor")}{" "}
           <button
             className="btn btn-link p-0 fs-10 fw-semibold"
             onClick={() => navigate("/expeditions")}
           >
-            Voir les expéditions
+            {t("notFound.viewExpeditions")}
           </button>
         </p>
       </div>

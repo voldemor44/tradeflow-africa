@@ -1,6 +1,8 @@
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const SupportChat = () => {
+  const { t } = useTranslation();
   useEffect(() => {
     const supportChat = document.querySelector(".support-chat");
     const supportChatBtns = document.querySelectorAll(".btn-support-chat");
@@ -47,7 +49,7 @@ const SupportChat = () => {
         <div className="card bg-body-emphasis">
           <div className="card-header d-flex flex-between-center px-4 py-3 border-bottom border-translucent">
             <h5 className="mb-0 d-flex align-items-center gap-2">
-              Demo widget
+              {t("supportChat.demoWidget")}
               <span className="fa-solid fa-circle text-success fs-11" />
             </h5>
             <div className="btn-reveal-trigger">
@@ -68,19 +70,19 @@ const SupportChat = () => {
                 aria-labelledby="support-chat-dropdown"
               >
                 <a className="dropdown-item" href="#!">
-                  Request a callback
+                  {t("supportChat.requestCallback")}
                 </a>
                 <a className="dropdown-item" href="#!">
-                  Search in chat
+                  {t("supportChat.searchInChat")}
                 </a>
                 <a className="dropdown-item" href="#!">
-                  Show history
+                  {t("supportChat.showHistory")}
                 </a>
                 <a className="dropdown-item" href="#!">
-                  Report to Admin
+                  {t("supportChat.reportToAdmin")}
                 </a>
                 <a className="dropdown-item btn-support-chat" href="#!">
-                  Close Support
+                  {t("supportChat.closeSupport")}
                 </a>
               </div>
             </div>
@@ -93,7 +95,7 @@ const SupportChat = () => {
                   href="#!"
                 >
                   <p className="mb-0 fw-semibold fs-9">
-                    I need help with something
+                    {t("supportChat.helpNeedSomething")}
                   </p>
                   <span className="fa-solid fa-paper-plane text-primary fs-9 ms-3" />
                 </a>
@@ -102,7 +104,7 @@ const SupportChat = () => {
                   href="#!"
                 >
                   <p className="mb-0 fw-semibold fs-9">
-                    I can’t reorder a product I previously ordered
+                    {t("supportChat.reorderProblem")}
                   </p>
                   <span className="fa-solid fa-paper-plane text-primary fs-9 ms-3" />
                 </a>
@@ -111,7 +113,7 @@ const SupportChat = () => {
                   href="#!"
                 >
                   <p className="mb-0 fw-semibold fs-9">
-                    How do I place an order?
+                    {t("supportChat.howPlaceOrder")}
                   </p>
                   <span className="fa-solid fa-paper-plane text-primary fs-9 ms-3" />
                 </a>
@@ -120,7 +122,7 @@ const SupportChat = () => {
                   href="#!"
                 >
                   <p className="mb-0 fw-semibold fs-9">
-                    My payment method not working
+                    {t("supportChat.paymentNotWorking")}
                   </p>
                   <span className="fa-solid fa-paper-plane text-primary fs-9 ms-3" />
                 </a>
@@ -135,8 +137,7 @@ const SupportChat = () => {
                 </div>
                 <h5 className="mt-2 mb-3">Eric</h5>
                 <p className="text-center text-body-emphasis mb-0">
-                  Ask us anything – we’ll get back to you here or by email
-                  within 24 hours.
+                  {t("supportChat.askAnything")}
                 </p>
               </div>
             </div>
@@ -146,7 +147,7 @@ const SupportChat = () => {
               <input
                 className="form-control outline-none border-0 flex-1 fs-9 px-0"
                 type="text"
-                placeholder="Write message"
+                placeholder={t("supportChat.writeMessage")}
               />
               <label
                 className="btn btn-link d-flex p-0 text-body-quaternary fs-9 border-0"
@@ -179,9 +180,9 @@ const SupportChat = () => {
         </div>
       </div>
       <button className="btn btn-support-chat p-0 border border-translucent">
-        <span className="fs-8 btn-text text-primary text-nowrap">
-          Support Chat
-        </span>
+          <span className="fs-8 btn-text text-primary text-nowrap">
+            {t("supportChat.supportChat")}
+          </span>
         <span className="ping-icon-wrapper mt-n4 ms-n6 mt-sm-0 ms-sm-2 position-absolute position-sm-relative">
           <span className="ping-icon-bg" />
           <span className="fa-solid fa-circle ping-icon" />

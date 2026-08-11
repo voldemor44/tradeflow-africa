@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
+import { useTranslation } from "react-i18next";
 
-const months = [
-  "Janv", "Févr", "Mars", "Avr", "Mai", "Juin",
-  "Juil", "Août", "Sept", "Oct", "Nov", "Déc",
+const getMonths = (t) => [
+  t("dashboard.monthJan"), t("dashboard.monthFeb"), t("dashboard.monthMar"), t("dashboard.monthApr"), t("dashboard.monthMay"), t("dashboard.monthJun"),
+  t("dashboard.monthJul"), t("dashboard.monthAug"), t("dashboard.monthSep"), t("dashboard.monthOct"), t("dashboard.monthNov"), t("dashboard.monthDec"),
 ];
 
 const ShipmentStatusTrendChart = ({
@@ -11,6 +12,8 @@ const ShipmentStatusTrendChart = ({
   inTransitData    = [50, 55, 48, 62, 58, 70, 65, 60, 68, 72, 66, 70],
   blockedData      = [15, 12, 18, 10, 20, 8,  14, 22, 10, 12, 9,  7 ],
 }) => {
+  const { t } = useTranslation();
+  const months = getMonths(t);
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
@@ -32,17 +35,17 @@ const ShipmentStatusTrendChart = ({
       legend: {
         data: [
           {
-            name: "Livrées",
+            name: t("dashboard.delivered"),
             icon: "roundRect",
             itemStyle: { color: getColor("primary"), borderWidth: 0 },
           },
           {
-            name: "En transit",
+            name: t("dashboard.inTransit"),
             icon: "roundRect",
             itemStyle: { color: getColor("info-lighter"), borderWidth: 0 },
           },
           {
-            name: "Bloquées",
+            name: t("dashboard.blocked"),
             icon: "roundRect",
             itemStyle: { color: getColor("primary-light"), borderWidth: 0 },
           },
@@ -74,7 +77,7 @@ const ShipmentStatusTrendChart = ({
           return params
             .map(
               (p) =>
-                `<span style="color:${p.color}">●</span> ${p.seriesName}: <strong>${p.value} exp.</strong>`
+                `<span style="color:${p.color}">●</span> ${p.seriesName}: <strong>${p.value} ${t("dashboard.expAbbrev")}</strong>`
             )
             .join("<br/>");
         },
@@ -118,7 +121,7 @@ const ShipmentStatusTrendChart = ({
       },
       series: [
         {
-          name: "Livrées",
+          name: t("dashboard.delivered"),
           type: "line",
           data: deliveredData,
           showSymbol: false,
@@ -130,7 +133,7 @@ const ShipmentStatusTrendChart = ({
           zlevel: 3,
         },
         {
-          name: "En transit",
+          name: t("dashboard.inTransit"),
           type: "line",
           data: inTransitData,
           showSymbol: false,
@@ -142,7 +145,7 @@ const ShipmentStatusTrendChart = ({
           zlevel: 2,
         },
         {
-          name: "Bloquées",
+          name: t("dashboard.blocked"),
           type: "line",
           data: blockedData,
           showSymbol: false,
@@ -168,7 +171,7 @@ const ShipmentStatusTrendChart = ({
       window.removeEventListener("resize", handleResize);
       chartInstanceRef.current?.dispose();
     };
-  }, [deliveredData, inTransitData, blockedData]);
+  }, [deliveredData, inTransitData, blockedData, t]);
 
   return <div ref={chartRef} style={{ height: 300 }} />;
 };

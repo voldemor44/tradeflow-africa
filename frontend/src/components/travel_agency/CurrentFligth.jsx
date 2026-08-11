@@ -1,6 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const CurrentFligth = () => {
+  const { t } = useTranslation();
   return (
     <>
       <div className="row gx-5 justify-content-between">
@@ -14,7 +16,7 @@ const CurrentFligth = () => {
               </tr>
               <tr>
                 <td>
-                  <h6 className="mb-0 text-body-tertiary">Flight no.</h6>
+                  <h6 className="mb-0 text-body-tertiary">{t("travelAgency.flightNo")}</h6>
                 </td>
                 <td className="text-body-tertiary pe-2">: </td>
                 <td>
@@ -25,7 +27,7 @@ const CurrentFligth = () => {
               </tr>
               <tr>
                 <td>
-                  <h6 className="mb-0 text-body-tertiary">Model</h6>
+                  <h6 className="mb-0 text-body-tertiary">{t("travelAgency.model")}</h6>
                 </td>
                 <td className="text-body-tertiary pe-2">: </td>
                 <td>
@@ -36,7 +38,7 @@ const CurrentFligth = () => {
               </tr>
               <tr>
                 <td>
-                  <h6 className="mb-0 text-body-tertiary">Velocity</h6>
+                  <h6 className="mb-0 text-body-tertiary">{t("travelAgency.velocity")}</h6>
                 </td>
                 <td className="text-body-tertiary pe-2">: </td>
                 <td>
@@ -58,7 +60,7 @@ const CurrentFligth = () => {
               </tr>
               <tr>
                 <td>
-                  <h6 className="mb-0 text-body-tertiary">Airline</h6>
+                  <h6 className="mb-0 text-body-tertiary">{t("travelAgency.airline")}</h6>
                 </td>
                 <td className="text-body-tertiary pe-2">: </td>
                 <td>
@@ -69,7 +71,7 @@ const CurrentFligth = () => {
               </tr>
               <tr>
                 <td>
-                  <h6 className="mb-0 text-body-tertiary">Callsign</h6>
+                  <h6 className="mb-0 text-body-tertiary">{t("travelAgency.callsign")}</h6>
                 </td>
                 <td className="text-body-tertiary pe-2">: </td>
                 <td>
@@ -80,7 +82,7 @@ const CurrentFligth = () => {
               </tr>
               <tr>
                 <td>
-                  <h6 className="mb-0 text-body-tertiary">ETA</h6>
+                  <h6 className="mb-0 text-body-tertiary">{t("travelAgency.eta")}</h6>
                 </td>
                 <td className="text-body-tertiary pe-2">: </td>
                 <td>

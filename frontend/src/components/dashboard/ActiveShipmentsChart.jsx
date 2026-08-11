@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 const ActiveShipmentsChart = ({
   startDate = new Date("1/1/2025"),
@@ -7,6 +8,7 @@ const ActiveShipmentsChart = ({
   data = [4, 7, 5, 9, 6, 8, 11],
   barWidth = "5px",
 }) => {
+  const { t } = useTranslation();
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
@@ -53,7 +55,7 @@ const ActiveShipmentsChart = ({
         borderWidth: 1,
         transitionDuration: 0,
         formatter: (params) =>
-          `<strong>${dayjs(params.name).format("DD MMM")}:</strong> ${params.value} expédition${params.value > 1 ? "s" : ""}`,
+          `<strong>${dayjs(params.name).format("DD MMM")}:</strong> ${params.value} ${t("dashboard.shipment")}${params.value > 1 ? "s" : ""}`,
         extraCssText: "z-index: 1000",
       },
       xAxis: {
@@ -103,7 +105,7 @@ const ActiveShipmentsChart = ({
       window.removeEventListener("resize", handleResize);
       chartInstanceRef.current?.dispose();
     };
-  }, [startDate, endDate, data, barWidth]);
+  }, [startDate, endDate, data, barWidth, t]);
 
   return <div ref={chartRef} style={{ height: 85, width: 115 }} />;
 };

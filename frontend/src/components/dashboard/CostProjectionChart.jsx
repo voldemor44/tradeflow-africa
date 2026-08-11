@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 const CostProjectionChart = ({
   projectedData = [
@@ -10,6 +11,7 @@ const CostProjectionChart = ({
     2100000, 1800000, 2350000, 2600000, 1950000, 2450000, 2150000, 2300000, 2050000, 2500000,
   ],
 }) => {
+  const { t } = useTranslation();
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
@@ -63,7 +65,7 @@ const CostProjectionChart = ({
         extraCssText: "z-index: 1000",
       },
       legend: {
-        data: ["Coût estimé", "Coût réel"],
+        data: [t("dashboard.estimatedCost"), t("dashboard.actualCost")],
         right: "right",
         width: "100%",
         itemWidth: 16,
@@ -111,7 +113,7 @@ const CostProjectionChart = ({
       },
       series: [
         {
-          name: "Coût estimé",
+          name: t("dashboard.estimatedCost"),
           type: "bar",
           barWidth: "6px",
           data: projectedData,
@@ -123,7 +125,7 @@ const CostProjectionChart = ({
           },
         },
         {
-          name: "Coût réel",
+          name: t("dashboard.actualCost"),
           type: "bar",
           data: actualData,
           barWidth: "6px",
@@ -153,7 +155,7 @@ const CostProjectionChart = ({
       window.removeEventListener("resize", handleResize);
       chartInstanceRef.current?.dispose();
     };
-  }, [projectedData, actualData]);
+  }, [projectedData, actualData, t]);
 
   return <div ref={chartRef} style={{ height: 300, width: "100%" }} />;
 };

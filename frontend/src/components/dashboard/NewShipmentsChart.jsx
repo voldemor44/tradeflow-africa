@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 const NewShipmentsChart = ({
   startDate = new Date("1/1/2025"),
@@ -8,6 +9,7 @@ const NewShipmentsChart = ({
   currentWeekData = [3, 5, 2, 7, 4, 6, 8],
   previousWeekData = [2, 4, 3, 5, 3, 4, 6],
 }) => {
+  const { t } = useTranslation();
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
@@ -44,7 +46,7 @@ const NewShipmentsChart = ({
       html += `
         <h6 class="fs-9 text-body-tertiary ${index > 0 ? "mb-0" : ""}">
           <span class="fas fa-circle me-2" style="color:${item.color}"></span>
-          ${item.date.format("DD MMM")} : ${item.value} dossier${item.value > 1 ? "s" : ""}
+          ${item.date.format("DD MMM")} : ${item.value} ${t("dashboard.case")}${item.value > 1 ? "s" : ""}
         </h6>
       `;
     });
@@ -148,7 +150,7 @@ const NewShipmentsChart = ({
       window.removeEventListener("resize", handleResize);
       chartInstanceRef.current?.dispose();
     };
-  }, [startDate, endDate, currentWeekData, previousWeekData]);
+  }, [startDate, endDate, currentWeekData, previousWeekData, t]);
 
   return <div ref={chartRef} style={{ height: 180, width: "100%" }} />;
 };

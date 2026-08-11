@@ -1,14 +1,15 @@
 import React, { useReducer, useCallback, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 // ============================================================
 // CONFIG (identique à NewShipmentModal)
 // ============================================================
 
-const TRANSPORT_MODES = [
-  { value: "sea", label: "Maritime" },
-  { value: "air", label: "Aérien" },
-  { value: "road", label: "Routier" },
-  { value: "multi", label: "Multimodal" },
+const getTransportModes = (t) => [
+  { value: "sea", label: t("editShipment.modeSea") },
+  { value: "air", label: t("editShipment.modeAir") },
+  { value: "road", label: t("editShipment.modeRoad") },
+  { value: "multi", label: t("editShipment.modeMulti") },
 ];
 
 const INCOTERMS = [
@@ -25,14 +26,14 @@ const INCOTERMS = [
   "DDP",
 ];
 
-const STATUSES = [
-  { value: "draft", label: "Brouillon" },
-  { value: "booking", label: "Réservation" },
-  { value: "in_transit", label: "En transit" },
-  { value: "at_port", label: "Au port" },
-  { value: "customs", label: "En dédouanement" },
-  { value: "blocked", label: "Bloquée" },
-  { value: "delivered", label: "Livré" },
+const getStatuses = (t) => [
+  { value: "draft", label: t("editShipment.statusDraft") },
+  { value: "booking", label: t("editShipment.statusBooking") },
+  { value: "in_transit", label: t("editShipment.statusInTransit") },
+  { value: "at_port", label: t("editShipment.statusAtPort") },
+  { value: "customs", label: t("editShipment.statusCustoms") },
+  { value: "blocked", label: t("editShipment.statusBlocked") },
+  { value: "delivered", label: t("editShipment.statusDelivered") },
 ];
 
 const PARTNERS_LIST = [
@@ -71,15 +72,15 @@ const COUNTRIES = [
   { value: "KR", label: "Corée du Sud" },
 ];
 
-const STATUS_CONFIG = {
-  draft: { label: "Brouillon", badge: "secondary" },
-  booking: { label: "Réservation", badge: "info" },
-  in_transit: { label: "En transit", badge: "primary" },
-  at_port: { label: "Au port", badge: "warning" },
-  customs: { label: "En dédouanement", badge: "warning" },
-  blocked: { label: "Bloquée", badge: "danger" },
-  delivered: { label: "Livré", badge: "success" },
-};
+const getStatusConfig = (t) => ({
+  draft: { label: t("editShipment.statusDraft"), badge: "secondary" },
+  booking: { label: t("editShipment.statusBooking"), badge: "info" },
+  in_transit: { label: t("editShipment.statusInTransit"), badge: "primary" },
+  at_port: { label: t("editShipment.statusAtPort"), badge: "warning" },
+  customs: { label: t("editShipment.statusCustoms"), badge: "warning" },
+  blocked: { label: t("editShipment.statusBlocked"), badge: "danger" },
+  delivered: { label: t("editShipment.statusDelivered"), badge: "success" },
+});
 
 // ============================================================
 // UTILITAIRES
@@ -118,23 +119,23 @@ const shipmentToForm = (shipment) => {
 // VALIDATION
 // ============================================================
 
-const validate = (form) => {
+const validate = (form, t) => {
   const errors = {};
   if (!form.description.trim())
-    errors.description = "La description est requise.";
+    errors.description = t("editShipment.errorDescription");
   if (!form.originCountry)
-    errors.originCountry = "Le pays d'origine est requis.";
+    errors.originCountry = t("editShipment.errorOriginCountry");
   if (!form.originCity.trim())
-    errors.originCity = "La ville d'origine est requise.";
-  if (!form.mode) errors.mode = "Le mode de transport est requis.";
-  if (!form.incoterm) errors.incoterm = "L'incoterm est requis.";
+    errors.originCity = t("editShipment.errorOriginCity");
+  if (!form.mode) errors.mode = t("editShipment.errorMode");
+  if (!form.incoterm) errors.incoterm = t("editShipment.errorIncoterm");
   if (
     form.declaredValue &&
     isNaN(Number(form.declaredValue.replace(/\s/g, "")))
   )
-    errors.declaredValue = "Valeur invalide.";
+    errors.declaredValue = t("editShipment.errorValue");
   if (form.eta && form.etd && form.eta < form.etd)
-    errors.eta = "L'ETA doit être après l'ETD.";
+    errors.eta = t("editShipment.errorEta");
   return errors;
 };
 
@@ -195,7 +196,11 @@ const SectionTitle = ({ icon, title }) => (
  * @param {function} onClose    — Callback appelé à la fermeture sans sauvegarde
  */
 const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
+  const { t } = useTranslation();
   const modalRef = useRef(null);
+  const STATUS_CONFIG = getStatusConfig(t);
+  const TRANSPORT_MODES = getTransportModes(t);
+  const STATUSES = getStatuses(t);
   const [state, dispatch] = useReducer(formReducer, {
     form: shipmentToForm(shipment) || {},
     errors: {},
@@ -237,7 +242,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
   const handleSubmit = useCallback(
     (e) => {
       e.preventDefault();
-      const validationErrors = validate(form);
+      const validationErrors = validate(form, t);
       if (Object.keys(validationErrors).length > 0) {
         dispatch({ type: "SET_ERRORS", errors: validationErrors });
         const firstError = document.querySelector(
@@ -292,7 +297,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
 
       if (onUpdated) onUpdated(updatedShipment);
     },
-    [form, shipment, onUpdated],
+    [form, shipment, onUpdated, t],
   );
 
   if (!shipment) return null;
@@ -325,7 +330,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                     className="modal-title mb-0 fw-bold"
                     id="editShipmentModalLabel"
                   >
-                    Modifier l'expédition
+                    {t("editShipment.title")}
                   </h5>
                   <span className="fw-bold text-primary fs-9">
                     {shipment.id}
@@ -341,16 +346,16 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                         className="fas fa-circle me-1"
                         style={{ fontSize: 7 }}
                       />
-                      Modifications non enregistrées
+                      {t("editShipment.unsavedChanges")}
                     </span>
                   )}
                 </div>
                 <p className="mb-0 fs-10 text-body-tertiary">
-                  Créé le {shipment.createdAtDisplay}
+                  {t("editShipment.createdOn")} {shipment.createdAtDisplay}
                   {shipment.updatedAt && (
                     <>
                       {" "}
-                      · Modifié le{" "}
+                      · {t("editShipment.modifiedOn")}{" "}
                       {new Date(shipment.updatedAt).toLocaleDateString("fr-FR")}
                     </>
                   )}
@@ -361,7 +366,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               type="button"
               className="btn-close"
               data-bs-dismiss="modal"
-              aria-label="Fermer"
+              aria-label={t("editShipment.close")}
             />
           </div>
 
@@ -369,11 +374,11 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
           <div className="modal-body px-4 py-3">
             <form id="editShipmentForm" onSubmit={handleSubmit} noValidate>
               {/* ── SECTION 1 : Informations générales ── */}
-              <SectionTitle icon="info-circle" title="Informations générales" />
+              <SectionTitle icon="info-circle" title={t("editShipment.sectionGeneral")} />
               <div className="row g-3">
                 <div className="col-12 col-md-6">
                   <Field
-                    label="Description de la marchandise"
+                    label={t("editShipment.descriptionLabel")}
                     required
                     error={errors.description}
                   >
@@ -387,7 +392,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                 </div>
                 <div className="col-12 col-md-4">
                   <Field
-                    label="Détails / Conditionnement"
+                    label={t("editShipment.detailsLabel")}
                     error={errors.details}
                   >
                     <input
@@ -399,7 +404,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                   </Field>
                 </div>
                 <div className="col-12 col-md-2">
-                  <Field label="Statut" error={errors.status}>
+                  <Field label={t("editShipment.statusLabel")} error={errors.status}>
                     <select
                       className="form-select form-select-sm"
                       value={form.status}
@@ -416,21 +421,21 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               </div>
 
               {/* ── SECTION 2 : Marchandise ── */}
-              <SectionTitle icon="box" title="Marchandise" />
+              <SectionTitle icon="box" title={t("editShipment.sectionGoods")} />
               <div className="row g-3">
                 <div className="col-6 col-md-3">
-                  <Field label="Code SH (HS Code)" error={errors.hsCode}>
+                  <Field label={t("editShipment.hsCodeLabel")} error={errors.hsCode}>
                     <input
                       type="text"
                       className="form-control form-control-sm"
-                      placeholder="Ex : 8471.30"
+                      placeholder={t("editShipment.hsCodePlaceholder")}
                       value={form.hsCode}
                       onChange={(e) => setField("hsCode", e.target.value)}
                     />
                   </Field>
                 </div>
                 <div className="col-6 col-md-3">
-                  <Field label="Quantité" error={errors.quantity}>
+                  <Field label={t("editShipment.quantityLabel")} error={errors.quantity}>
                     <input
                       type="text"
                       className="form-control form-control-sm"
@@ -440,7 +445,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                   </Field>
                 </div>
                 <div className="col-6 col-md-3">
-                  <Field label="Poids brut (kg)" error={errors.weight}>
+                  <Field label={t("editShipment.weightLabel")} error={errors.weight}>
                     <input
                       type="number"
                       className="form-control form-control-sm"
@@ -451,7 +456,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                   </Field>
                 </div>
                 <div className="col-6 col-md-3">
-                  <Field label="Volume (m³)" error={errors.volume}>
+                  <Field label={t("editShipment.volumeLabel")} error={errors.volume}>
                     <input
                       type="number"
                       className="form-control form-control-sm"
@@ -463,7 +468,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                 </div>
                 <div className="col-12 col-md-4">
                   <Field
-                    label="Valeur déclarée (FCFA)"
+                    label={t("editShipment.declaredValueLabel")}
                     error={errors.declaredValue}
                   >
                     <input
@@ -479,10 +484,10 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               </div>
 
               {/* ── SECTION 3 : Transport ── */}
-              <SectionTitle icon="truck" title="Transport" />
+              <SectionTitle icon="truck" title={t("editShipment.sectionTransport")} />
               <div className="row g-3">
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Mode de transport" required error={errors.mode}>
+                  <Field label={t("editShipment.modeLabel")} required error={errors.mode}>
                     <select
                       className={`form-select form-select-sm ${errors.mode ? "is-invalid" : ""}`}
                       value={form.mode}
@@ -497,7 +502,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                   </Field>
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="Incoterm" required error={errors.incoterm}>
+                  <Field label={t("editShipment.incotermLabel")} required error={errors.incoterm}>
                     <select
                       className={`form-select form-select-sm ${errors.incoterm ? "is-invalid" : ""}`}
                       value={form.incoterm}
@@ -512,7 +517,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                   </Field>
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
-                  <Field label="ETD — Date de départ" error={errors.etd}>
+                  <Field label={t("editShipment.etdLabel")} error={errors.etd}>
                     <input
                       type="date"
                       className="form-control form-control-sm"
@@ -523,7 +528,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                 </div>
                 <div className="col-12 col-sm-6 col-md-3">
                   <Field
-                    label="ETA — Date d'arrivée estimée"
+                    label={t("editShipment.etaLabel")}
                     error={errors.eta}
                   >
                     <input
@@ -537,17 +542,17 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               </div>
 
               {/* ── SECTION 4 : Origine & Destination ── */}
-              <SectionTitle icon="map-pin" title="Origine & Destination" />
+              <SectionTitle icon="map-pin" title={t("editShipment.sectionRoute")} />
               <div className="row g-3">
                 <div className="col-12 col-lg-6">
                   <p className="fs-10 fw-bold text-body-tertiary mb-2">
                     <span className="fas fa-arrow-up me-1 text-primary" />
-                    DÉPART
+                    {t("editShipment.departure")}
                   </p>
                   <div className="row g-2">
                     <div className="col-12 col-sm-6">
                       <Field
-                        label="Pays d'origine"
+                        label={t("editShipment.originCountryLabel")}
                         required
                         error={errors.originCountry}
                       >
@@ -558,7 +563,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                             setField("originCountry", e.target.value)
                           }
                         >
-                          <option value="">Sélectionner…</option>
+                          <option value="">{t("editShipment.select")}</option>
                           {COUNTRIES.map((c) => (
                             <option key={c.value} value={c.value}>
                               {c.label}
@@ -568,7 +573,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                       </Field>
                     </div>
                     <div className="col-12 col-sm-6">
-                      <Field label="Ville" required error={errors.originCity}>
+                      <Field label={t("editShipment.cityLabel")} required error={errors.originCity}>
                         <input
                           type="text"
                           className={`form-control form-control-sm ${errors.originCity ? "is-invalid" : ""}`}
@@ -581,7 +586,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                     </div>
                     <div className="col-12">
                       <Field
-                        label="Port / Aéroport de chargement"
+                        label={t("editShipment.loadingPortLabel")}
                         error={errors.originPort}
                       >
                         <input
@@ -599,12 +604,12 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                 <div className="col-12 col-lg-6">
                   <p className="fs-10 fw-bold text-body-tertiary mb-2">
                     <span className="fas fa-arrow-down me-1 text-success" />
-                    ARRIVÉE
+                    {t("editShipment.arrival")}
                   </p>
                   <div className="row g-2">
                     <div className="col-12 col-sm-6">
                       <Field
-                        label="Pays de destination"
+                        label={t("editShipment.destCountryLabel")}
                         error={errors.destinationCountry}
                       >
                         <select
@@ -623,7 +628,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                       </Field>
                     </div>
                     <div className="col-12 col-sm-6">
-                      <Field label="Ville" error={errors.destinationCity}>
+                      <Field label={t("editShipment.cityLabel")} error={errors.destinationCity}>
                         <input
                           type="text"
                           className="form-control form-control-sm"
@@ -636,7 +641,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                     </div>
                     <div className="col-12">
                       <Field
-                        label="Port / Aéroport de déchargement"
+                        label={t("editShipment.unloadingPortLabel")}
                         error={errors.destinationPort}
                       >
                         <input
@@ -654,10 +659,10 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               </div>
 
               {/* ── SECTION 5 : Partenaires ── */}
-              <SectionTitle icon="users" title="Partenaires" />
+              <SectionTitle icon="users" title={t("editShipment.sectionPartners")} />
               <div className="row g-3">
                 <div className="col-12 col-md-4">
-                  <Field label="Transitaire" error={errors.freightForwarder}>
+                  <Field label={t("editShipment.forwarderLabel")} error={errors.freightForwarder}>
                     <select
                       className="form-select form-select-sm"
                       value={form.freightForwarder}
@@ -665,7 +670,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                         setField("freightForwarder", e.target.value)
                       }
                     >
-                      <option value="">Sélectionner…</option>
+                      <option value="">{t("editShipment.select")}</option>
                       {PARTNERS_LIST.map((p) => (
                         <option key={p.value} value={p.value}>
                           {p.label}
@@ -676,7 +681,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                 </div>
                 <div className="col-12 col-md-4">
                   <Field
-                    label="Commissionnaire en douane"
+                    label={t("editShipment.customsBrokerLabel")}
                     error={errors.customsBroker}
                   >
                     <select
@@ -686,7 +691,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                         setField("customsBroker", e.target.value)
                       }
                     >
-                      <option value="">Sélectionner…</option>
+                      <option value="">{t("editShipment.select")}</option>
                       {PARTNERS_LIST.map((p) => (
                         <option key={p.value} value={p.value}>
                           {p.label}
@@ -697,7 +702,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
                 </div>
                 <div className="col-12 col-md-4">
                   <Field
-                    label="Fournisseur / Expéditeur"
+                    label={t("editShipment.supplierLabel")}
                     error={errors.supplier}
                   >
                     <input
@@ -711,9 +716,9 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               </div>
 
               {/* ── SECTION 6 : Notes ── */}
-              <SectionTitle icon="file-text" title="Notes internes" />
+              <SectionTitle icon="file-text" title={t("editShipment.sectionNotes")} />
               <Field
-                label="Notes & instructions particulières"
+                label={t("editShipment.notesLabel")}
                 error={errors.notes}
               >
                 <textarea
@@ -734,7 +739,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               data-bs-dismiss="modal"
             >
               <span className="fas fa-times me-2" />
-              Annuler
+              {t("editShipment.cancel")}
             </button>
             <button
               type="submit"
@@ -743,7 +748,7 @@ const EditShipmentModal = ({ shipment, onUpdated, onClose }) => {
               disabled={!isDirty}
             >
               <span className="fas fa-save me-2" />
-              Enregistrer les modifications
+              {t("editShipment.save")}
             </button>
           </div>
         </div>

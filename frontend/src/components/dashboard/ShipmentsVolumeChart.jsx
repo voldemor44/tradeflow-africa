@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 import dayjs from "dayjs";
+import { useTranslation } from "react-i18next";
 
 const ShipmentsVolumeChart = ({
   startDate = new Date("1/1/2025"),
@@ -14,6 +15,7 @@ const ShipmentsVolumeChart = ({
     5, 7, 7, 7, 9, 11, 8, 5, 5, 6, 7, 8, 7, 6, 5,
   ],
 }) => {
+  const { t } = useTranslation();
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
 
@@ -50,7 +52,7 @@ const ShipmentsVolumeChart = ({
       html += `
         <h6 class="fs-9 text-body-tertiary ${index > 0 ? "mb-0" : ""}">
           <span class="fas fa-circle me-2" style="color:${item.color}"></span>
-          ${item.date.format("DD MMM")} : ${item.value} expédition${item.value > 1 ? "s" : ""}
+          ${item.date.format("DD MMM")} : ${item.value} ${t("dashboard.shipment")}${item.value > 1 ? "s" : ""}
         </h6>
       `;
     });
@@ -139,7 +141,7 @@ const ShipmentsVolumeChart = ({
       },
       series: [
         {
-          name: "Mois en cours",
+          name: t("dashboard.currentMonth"),
           type: "line",
           data: currentMonthData,
           showSymbol: false,
@@ -147,7 +149,7 @@ const ShipmentsVolumeChart = ({
           zlevel: 2,
         },
         {
-          name: "Mois précédent",
+          name: t("dashboard.previousMonth"),
           type: "line",
           data: previousMonthData,
           lineStyle: { type: "dashed", width: 1, color: getColor("info") },
@@ -173,7 +175,7 @@ const ShipmentsVolumeChart = ({
       window.removeEventListener("resize", handleResize);
       chartInstanceRef.current?.dispose();
     };
-  }, [startDate, endDate, currentMonthData, previousMonthData]);
+  }, [startDate, endDate, currentMonthData, previousMonthData, t]);
 
   return <div ref={chartRef} style={{ minHeight: 320, width: "100%" }} />;
 };

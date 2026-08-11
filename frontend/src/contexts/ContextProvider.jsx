@@ -1,5 +1,4 @@
 import { createContext, useState, useContext } from "react";
-import { useTranslation } from "react-i18next";
 
 const StateContext = createContext({
   userId: null,
@@ -15,8 +14,6 @@ const StateContext = createContext({
 });
 
 export const ContextProvider = ({ children }) => {
-  const { t, i18n } = useTranslation();
-
   const [userId, _setUserId] = useState(localStorage.getItem("USER_ID"));
   const [user, setUser] = useState({});
   const [token, _setToken] = useState(localStorage.getItem("ACCESS_TOKEN"));
@@ -60,8 +57,6 @@ export const ContextProvider = ({ children }) => {
         token,
         refreshToken,
         paginationDefaultSize,
-        t,
-        i18n,
         setUserId,
         setUser,
         setToken,

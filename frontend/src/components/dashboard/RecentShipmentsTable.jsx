@@ -1,100 +1,106 @@
 import { useState } from "react";
 import { NavLink } from "react-router";
+import { useTranslation } from "react-i18next";
 
-const shipmentsData = [
+const getShipmentsData = (t) => [
   {
     id: "TFA-2025-0045",
-    description: "Équipements électroniques – 3 conteneurs 20'",
+    description: t("dashboard.descElectronics"),
     origin: "Shanghai, CN",
     destination: "Cotonou, BJ",
     partner: { name: "BESCO Transitaires", initials: "BE" },
     mode: "sea",
-    status: { title: "En mer", badge: "info", icon: "anchor" },
+    status: { title: t("dashboard.recentAtSea"), badge: "info", icon: "anchor" },
     eta: "15 Jan 2025",
-    date: "À l'instant",
+    date: t("dashboard.justNow"),
   },
   {
     id: "TFA-2025-0044",
-    description: "Matériaux de construction – vrac 120t",
+    description: t("dashboard.descConstruction"),
     origin: "Marseille, FR",
     destination: "Cotonou, BJ",
     partner: { name: "DHL Express Bénin", initials: "DH" },
     mode: "sea",
-    status: { title: "En dédouanement", badge: "warning", icon: "clock" },
+    status: { title: t("dashboard.recentInCustoms"), badge: "warning", icon: "clock" },
     eta: "12 Jan 2025",
-    date: "À l'instant",
+    date: t("dashboard.justNow"),
   },
   {
     id: "TFA-2025-0043",
-    description: "Produits pharmaceutiques – 2 palettes",
+    description: t("dashboard.descPharma"),
     origin: "Paris, FR",
     destination: "Cotonou, BJ",
     partner: { name: "Air France Cargo", initials: "AF" },
     mode: "air",
-    status: { title: "Bloquée", badge: "danger", icon: "x-circle" },
+    status: { title: t("dashboard.recentBlocked"), badge: "danger", icon: "x-circle" },
     eta: "08 Jan 2025",
-    date: "À l'instant",
+    date: t("dashboard.justNow"),
   },
   {
     id: "TFA-2025-0042",
-    description: "Pièces automobiles – 1 conteneur 40'",
+    description: t("dashboard.descAuto"),
     origin: "Istanbul, TR",
     destination: "Cotonou, BJ",
     partner: { name: "MAERSK Bénin", initials: "MA" },
     mode: "sea",
-    status: { title: "Livré", badge: "success", icon: "check" },
+    status: { title: t("dashboard.recentDelivered"), badge: "success", icon: "check" },
     eta: "05 Jan 2025",
     date: "05 Jan, 14:30",
   },
   {
     id: "TFA-2025-0041",
-    description: "Textiles et vêtements – 2 conteneurs 20'",
+    description: t("dashboard.descTextiles"),
     origin: "Mumbai, IN",
     destination: "Cotonou, BJ",
     partner: { name: "BESCO Transitaires", initials: "BE" },
     mode: "sea",
-    status: { title: "Au port", badge: "primary", icon: "map-pin" },
+    status: { title: t("dashboard.recentAtPort"), badge: "primary", icon: "map-pin" },
     eta: "03 Jan 2025",
     date: "03 Jan, 09:15",
   },
   {
     id: "TFA-2025-0040",
-    description: "Machines industrielles – hors gabarit",
+    description: t("dashboard.descMachines"),
     origin: "Hambourg, DE",
     destination: "Cotonou, BJ",
     partner: { name: "SAGA Transport", initials: "SA" },
     mode: "sea",
-    status: { title: "Livré", badge: "success", icon: "check" },
+    status: { title: t("dashboard.recentDelivered"), badge: "success", icon: "check" },
     eta: "28 Déc 2024",
     date: "28 Déc, 11:00",
   },
   {
     id: "TFA-2025-0039",
-    description: "Denrées alimentaires – réfrigérées 18t",
+    description: t("dashboard.descFood"),
     origin: "Dubaï, AE",
     destination: "Cotonou, BJ",
     partner: { name: "Emirates SkyCargo", initials: "EM" },
     mode: "air",
-    status: { title: "Livré", badge: "success", icon: "check" },
+    status: { title: t("dashboard.recentDelivered"), badge: "success", icon: "check" },
     eta: "22 Déc 2024",
     date: "22 Déc, 08:45",
   },
   {
     id: "TFA-2025-0038",
-    description: "Équipements solaires – 4 conteneurs 40'",
+    description: t("dashboard.descSolar"),
     origin: "Guangzhou, CN",
     destination: "Cotonou, BJ",
     partner: { name: "CMA CGM Bénin", initials: "CM" },
     mode: "sea",
-    status: { title: "En mer", badge: "info", icon: "anchor" },
+    status: { title: t("dashboard.recentAtSea"), badge: "info", icon: "anchor" },
     eta: "20 Jan 2025",
     date: "18 Déc, 10:00",
   },
 ];
 
 const ModeIcon = ({ mode }) => {
+  const { t } = useTranslation();
   const icons = { sea: "ship", air: "plane", road: "truck" };
-  const labels = { sea: "Maritime", air: "Aérien", road: "Routier" };
+  const labels = {
+    sea: t("dashboard.modeSea"),
+    air: t("dashboard.modeAir"),
+    road: t("dashboard.modeRoad"),
+  };
   return (
     <span
       className="text-body-tertiary fs-10 d-flex align-items-center gap-1"
@@ -115,6 +121,8 @@ const PartnerAvatar = ({ partner }) => (
 );
 
 const RecentShipmentsTable = () => {
+  const { t } = useTranslation();
+  const shipmentsData = getShipmentsData(t);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -144,8 +152,8 @@ const RecentShipmentsTable = () => {
               <input
                 className="form-control search-input form-control-sm"
                 type="search"
-                placeholder="Rechercher un dossier, partenaire, route..."
-                aria-label="Rechercher"
+                placeholder={t("dashboard.searchPlaceholder")}
+                aria-label={t("dashboard.recentSearchAria")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -161,7 +169,7 @@ const RecentShipmentsTable = () => {
             to="/expeditions"
             className="btn btn-sm btn-phoenix-secondary bg-body-emphasis bg-body-hover me-2"
           >
-            Toutes les expéditions
+            {t("dashboard.allShipments")}
           </NavLink>
           <button
             className="btn btn-sm btn-phoenix-secondary bg-body-emphasis bg-body-hover"
@@ -174,14 +182,14 @@ const RecentShipmentsTable = () => {
           </button>
           <ul className="dropdown-menu dropdown-menu-end">
             <li>
-              <a className="dropdown-item" href="#!">Exporter CSV</a>
+              <a className="dropdown-item" href="#!">{t("dashboard.exportCSV")}</a>
             </li>
             <li>
-              <a className="dropdown-item" href="#!">Exporter PDF</a>
+              <a className="dropdown-item" href="#!">{t("dashboard.exportPDF")}</a>
             </li>
             <div className="dropdown-divider" />
             <li>
-              <a className="dropdown-item text-danger" href="#!">Archiver la sélection</a>
+              <a className="dropdown-item text-danger" href="#!">{t("dashboard.archiveSelection")}</a>
             </li>
           </ul>
         </div>
@@ -198,25 +206,25 @@ const RecentShipmentsTable = () => {
                 </div>
               </th>
               <th className="align-middle" scope="col" style={{ minWidth: 140 }}>
-                N° DOSSIER
+                {t("dashboard.caseNo")}
               </th>
               <th className="align-middle" scope="col" style={{ minWidth: 240 }}>
-                MARCHANDISE
+                {t("dashboard.goods")}
               </th>
               <th className="align-middle" scope="col" style={{ minWidth: 180 }}>
-                ROUTE
+                {t("dashboard.route")}
               </th>
               <th className="align-middle" scope="col" style={{ minWidth: 160 }}>
-                PARTENAIRE
+                {t("dashboard.partner")}
               </th>
               <th className="align-middle" scope="col" style={{ minWidth: 80 }}>
-                MODE
+                {t("dashboard.mode")}
               </th>
               <th className="align-middle text-start ps-5" scope="col">
-                STATUT
+                {t("dashboard.status")}
               </th>
               <th className="align-middle text-end" scope="col" style={{ minWidth: 110 }}>
-                ETA
+                {t("dashboard.eta")}
               </th>
               <th className="text-end pe-0 align-middle" scope="col" />
             </tr>
@@ -294,11 +302,11 @@ const RecentShipmentsTable = () => {
                   </button>
                   <div className="dropdown-menu dropdown-menu-end py-2">
                     <NavLink className="dropdown-item" to={`/expeditions/${shipment.id}`}>
-                      Voir le dossier
+                      {t("dashboard.viewFile")}
                     </NavLink>
-                    <a className="dropdown-item" href="#!">Modifier</a>
+                    <a className="dropdown-item" href="#!">{t("dashboard.edit")}</a>
                     <div className="dropdown-divider" />
-                    <a className="dropdown-item text-danger" href="#!">Archiver</a>
+                    <a className="dropdown-item text-danger" href="#!">{t("dashboard.archive")}</a>
                   </div>
                 </td>
               </tr>
@@ -311,9 +319,11 @@ const RecentShipmentsTable = () => {
       <div className="row align-items-center py-1">
         <div className="col d-flex fs-9">
           <p className="mb-0 d-none d-sm-block me-3 fw-semibold text-body">
-            {(currentPage - 1) * itemsPerPage + 1}-
-            {Math.min(currentPage * itemsPerPage, filteredData.length)} sur{" "}
-            {filteredData.length}
+            {t("dashboard.pageRange", {
+              from: (currentPage - 1) * itemsPerPage + 1,
+              to: Math.min(currentPage * itemsPerPage, filteredData.length),
+              total: filteredData.length,
+            })}
           </p>
         </div>
         <div className="col-auto d-flex">
@@ -324,7 +334,7 @@ const RecentShipmentsTable = () => {
             onClick={() => setCurrentPage((prev) => prev - 1)}
           >
             <span className="fas fa-chevron-left me-2" />
-            Précédent
+            {t("dashboard.previous")}
           </button>
           <button
             className="btn btn-link px-1 ms-1"
@@ -332,7 +342,7 @@ const RecentShipmentsTable = () => {
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((prev) => prev + 1)}
           >
-            Suivant
+            {t("dashboard.next")}
             <span className="fas fa-chevron-right ms-2" />
           </button>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
+import { useTranslation } from "react-i18next";
 
 // === CONFIGURATION ===
 const CHART_CONFIG = {
@@ -18,6 +19,12 @@ const CHART_CONFIG = {
 };
 
 // Données par défaut pour 3 types d'activités (Hotel, Flight, Trip)
+const getActivityOptions = (t) => [
+  { value: 0, label: t("travelAgency.hotel") },
+  { value: 1, label: t("travelAgency.flight") },
+  { value: 2, label: t("travelAgency.trip") },
+];
+
 const DEFAULT_DATA = {
   profit: [
     [350000, 390000, 410700, 450000, 390000, 410700], // Hotel
@@ -103,22 +110,26 @@ const tooltipFormatter = (params) => {
 const FinancialActivitySessions = ({
   data = DEFAULT_DATA,
   yAxisCategories = CHART_CONFIG.defaultYAxisCategories,
-  activityOptions = [
-    { value: 0, label: "Hotel" },
-    { value: 1, label: "Flight" },
-    { value: 2, label: "Trip" },
-  ],
-  title = "Financial activities",
-  subtitle = "Yearly Balance",
+  activityOptions,
+  title,
+  subtitle,
   height = "700px",
 }) => {
+  const { t } = useTranslation();
+  const resolvedActivityOptions =
+    activityOptions ?? getActivityOptions(t);
+  const resolvedTitle = title ?? t("travelAgency.financialActivities");
+  const resolvedSubtitle = subtitle ?? t("travelAgency.yearlyBalance");
+  const profitName = t("travelAgency.profit");
+  const revenueName = t("travelAgency.revenue");
+  const expensesName = t("travelAgency.expenses");
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const [selectedActivity, setSelectedActivity] = useState(0);
   const [toggledLegends, setToggledLegends] = useState({
-    Profit: true,
-    Revenue: true,
-    Expenses: true,
+    [profitName]: true,
+    [revenueName]: true,
+    [expensesName]: true,
   });
 
   // === INITIALISATION DU GRAPHIQUE ===
@@ -144,7 +155,7 @@ const FinancialActivitySessions = ({
           extraCssText: "z-index: 1000",
         },
         legend: {
-          data: ["Profit", "Revenue", "Expenses"],
+          data: [profitName, revenueName, expensesName],
           show: false,
         },
         xAxis: {
@@ -175,7 +186,7 @@ const FinancialActivitySessions = ({
         },
         series: [
           {
-            name: "Profit",
+            name: profitName,
             stack: "Total",
             type: "bar",
             barWidth: CHART_CONFIG.barWidth,
@@ -189,7 +200,7 @@ const FinancialActivitySessions = ({
             data: data.profit[selectedActivity],
           },
           {
-            name: "Revenue",
+            name: revenueName,
             type: "bar",
             barWidth: CHART_CONFIG.barWidth,
             barGap: CHART_CONFIG.barGap,
@@ -204,7 +215,7 @@ const FinancialActivitySessions = ({
             data: data.revenue[selectedActivity],
           },
           {
-            name: "Expenses",
+            name: expensesName,
             type: "bar",
             barWidth: CHART_CONFIG.barWidth,
             emphasis: { focus: "series" },
@@ -233,7 +244,7 @@ const FinancialActivitySessions = ({
       window.removeEventListener("resize", handleResize);
       chartInstanceRef.current?.dispose();
     };
-  }, [data, yAxisCategories, selectedActivity]);
+  }, [data, yAxisCategories, selectedActivity, profitName, revenueName, expensesName]);
 
   // === GESTION DES CLICS SUR LA LÉGENDE ===
   const handleLegendToggle = (legendName) => {
@@ -257,8 +268,8 @@ const FinancialActivitySessions = ({
         <div className="row flex-between-end gy-3 gx-2">
           {/* Titre */}
           <div className="col-auto">
-            <h3 className="text-body-highlight">{title}</h3>
-            <p className="mb-0 text-body-tertiary">{subtitle}</p>
+            <h3 className="text-body-highlight">{resolvedTitle}</h3>
+            <p className="mb-0 text-body-tertiary">{resolvedSubtitle}</p>
           </div>
 
           {/* Sélecteur d'activité */}
@@ -269,7 +280,7 @@ const FinancialActivitySessions = ({
               onChange={handleActivityChange}
               data-activities-options="data-activities-options"
             >
-              {activityOptions.map((option) => (
+              {resolvedActivityOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -296,13 +307,13 @@ const FinancialActivitySessions = ({
               </button>
               <div className="dropdown-menu dropdown-menu-end">
                 <a className="dropdown-item" href="#">
-                  Action
+                  {t("travelAgency.action")}
                 </a>
                 <a className="dropdown-item" href="#">
-                  Another action
+                  {t("travelAgency.anotherAction")}
                 </a>
                 <a className="dropdown-item" href="#">
-                  Something else here
+                  {t("travelAgency.somethingElse")}
                 </a>
               </div>
             </div>
@@ -312,40 +323,40 @@ const FinancialActivitySessions = ({
           <div className="col-12 col-md-auto col-lg-12 col-xxl-auto mx-auto order-1 order-sm-0">
             <div className="d-flex justify-content-center gap-6 gap-xxl-4">
               <button
-                className={`btn d-flex align-items-center p-0 shadow-none fw-semibold ${!toggledLegends.Profit ? "opacity-50" : ""}`}
+                className={`btn d-flex align-items-center p-0 shadow-none fw-semibold ${!toggledLegends[profitName] ? "opacity-50" : ""}`}
                 id="profit"
-                onClick={() => handleLegendToggle("Profit")}
+                onClick={() => handleLegendToggle(profitName)}
               >
                 <span
                   className="bg-primary-light me-2"
                   style={{ width: 16, height: 6, borderRadius: 1 }}
                   data-bs-theme="light"
                 />
-                <span className="text-body-secondary">Profit</span>
+                <span className="text-body-secondary">{profitName}</span>
               </button>
               <button
-                className={`btn d-flex align-items-center p-0 shadow-none fw-semibold ${!toggledLegends.Revenue ? "opacity-50" : ""}`}
+                className={`btn d-flex align-items-center p-0 shadow-none fw-semibold ${!toggledLegends[revenueName] ? "opacity-50" : ""}`}
                 id="revenue"
-                onClick={() => handleLegendToggle("Revenue")}
+                onClick={() => handleLegendToggle(revenueName)}
               >
                 <span
                   className="bg-success-light me-2"
                   style={{ width: 16, height: 6, borderRadius: 1 }}
                   data-bs-theme="light"
                 />
-                <span className="text-body-secondary">Revenue</span>
+                <span className="text-body-secondary">{revenueName}</span>
               </button>
               <button
-                className={`btn d-flex align-items-center p-0 shadow-none fw-semibold ${!toggledLegends.Expenses ? "opacity-50" : ""}`}
+                className={`btn d-flex align-items-center p-0 shadow-none fw-semibold ${!toggledLegends[expensesName] ? "opacity-50" : ""}`}
                 id="expanses"
-                onClick={() => handleLegendToggle("Expenses")}
+                onClick={() => handleLegendToggle(expensesName)}
               >
                 <span
                   className="bg-info-light me-2"
                   style={{ width: 16, height: 6, borderRadius: 1 }}
                   data-bs-theme="light"
                 />
-                <span className="text-body-secondary">Expenses</span>
+                <span className="text-body-secondary">{expensesName}</span>
               </button>
             </div>
           </div>

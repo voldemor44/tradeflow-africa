@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink, useLocation } from "react-router";
+import { useTranslation } from "react-i18next";
 
 // Hook pour détecter si un groupe de routes est actif
 const useIsGroupActive = (paths) => {
@@ -146,6 +147,7 @@ const SectionLabel = ({ label }) => (
 // ============================================================
 
 const Sidebar = ({ alerts = {} }) => {
+  const { t } = useTranslation();
   /**
    * alerts = {
    *   shipmentsBlocked: 3,      // expéditions bloquées
@@ -162,27 +164,27 @@ const Sidebar = ({ alerts = {} }) => {
         <div className="navbar-vertical-content">
           <ul className="navbar-nav flex-column" id="navbarVerticalNav">
             {/* ── SECTION PRINCIPALE ─────────────────────── */}
-            <SectionLabel label="Principal" />
+            <SectionLabel label={t("nav.main")} />
 
             {/* Dashboard */}
             <li className="nav-item">
               <NavSingleItem
                 to="/dashboard"
                 icon="pie-chart"
-                label="Tableau de bord"
+                label={t("nav.dashboard")}
                 alertCount={alerts.notifications}
               />
             </li>
 
             {/* ── SECTION OPERATIONS ─────────────────────── */}
-            <SectionLabel label="Opérations" />
+            <SectionLabel label={t("nav.operations")} />
 
             {/* Expéditions */}
             <li className="nav-item">
               <NavSingleItem
                 to="/expeditions"
                 icon="package"
-                label="Expéditions"
+                label={t("nav.expeditions")}
                 alertCount={alerts.shipmentsBlocked}
               />
             </li>
@@ -192,7 +194,7 @@ const Sidebar = ({ alerts = {} }) => {
               <NavSingleItem
                 to="/tracking/carte"
                 icon="map"
-                label="Carte & Tracking"
+                label={t("nav.mapTracking")}
               />
             </li>
 
@@ -201,7 +203,7 @@ const Sidebar = ({ alerts = {} }) => {
               <NavSingleItem
                 id="documents"
                 icon="file-text"
-                label="Documents"
+                label={t("nav.documents")}
                 to="/documents/list"
                 alertCount={
                   (alerts.documentsToValidate || 0) +
@@ -215,82 +217,82 @@ const Sidebar = ({ alerts = {} }) => {
               <NavGroup
                 id="partenaires"
                 icon="users"
-                label="Partenaires"
+                label={t("nav.partners")}
                 activePaths={["/partenaires"]}
               >
-                <NavSubItem to="/partenaires" label="Tous les partenaires" />
+                <NavSubItem to="/partenaires" label={t("nav.allPartners")} />
                 <NavSubItem
                   to="/partenaires/transitaires"
-                  label="Transitaires"
+                  label={t("nav.forwarders")}
                 />
                 <NavSubItem
                   to="/partenaires/commissionnaires"
-                  label="Commissionnaires"
+                  label={t("nav.commissionAgents")}
                 />
                 <NavSubItem
                   to="/partenaires/transporteurs"
-                  label="Transporteurs"
+                  label={t("nav.carriers")}
                 />
                 <NavSubItem
                   to="/partenaires/fournisseurs"
-                  label="Fournisseurs & Clients"
+                  label={t("nav.suppliersCustomers")}
                 />
               </NavGroup>
             </li>
 
             {/* ── SECTION ANALYTIQUE ──────────────────────── */}
-            <SectionLabel label="Analytique" />
+            <SectionLabel label={t("nav.analytics")} />
 
             {/* Analytics */}
             <li className="nav-item">
               <NavGroup
                 id="analytics"
                 icon="bar-chart-2"
-                label="Analytics"
+                label={t("nav.analytics")}
                 activePaths={["/analytics"]}
               >
-                <NavSubItem to="/analytics" label="Vue générale" />
+                <NavSubItem to="/analytics" label={t("nav.analyticsOverview")} />
                 <NavSubItem
                   to="/analytics/partenaires"
-                  label="Performance partenaires"
+                  label={t("nav.partnerPerformance")}
                 />
                 <NavSubItem
                   to="/analytics/couts"
-                  label="Coûts par expédition"
+                  label={t("nav.costsPerShipment")}
                   disabled
-                  textBadge="V2"
+                  textBadge={t("nav.v2")}
                 />
-                <NavSubItem to="/analytics/delais" label="Délais & retards" />
+                <NavSubItem to="/analytics/delais" label={t("nav.delays")} />
               </NavGroup>
             </li>
 
             {/* ── SECTION PARAMETRES ──────────────────────── */}
-            <SectionLabel label="Paramètres" />
+            <SectionLabel label={t("nav.settings")} />
 
             {/* Paramètres */}
             <li className="nav-item">
               <NavGroup
                 id="parametres"
                 icon="settings"
-                label="Paramètres"
+                label={t("nav.settingsTitle")}
                 activePaths={["/parametres"]}
               >
-                <NavSubItem to="/parametres/profil" label="Mon profil" />
+                <NavSubItem to="/parametres/profil" label={t("nav.myProfile")} />
                 <NavSubItem
                   to="/parametres/equipe"
-                  label="Équipe & Utilisateurs"
+                  label={t("nav.teamUsers")}
                 />
                 <NavSubItem
                   to="/parametres/organisation"
-                  label="Organisation"
+                  label={t("nav.organisation")}
                 />
                 <NavSubItem
                   to="/parametres/notifications"
-                  label="Notifications"
+                  label={t("nav.notifications")}
                 />
                 <NavSubItem
                   to="/parametres/abonnement"
-                  label="Abonnement & Facturation"
+                  label={t("nav.subscriptionBilling")}
                 />
               </NavGroup>
             </li>
@@ -303,7 +305,7 @@ const Sidebar = ({ alerts = {} }) => {
         <button className="btn navbar-vertical-toggle border-0 fw-semibold w-100 white-space-nowrap d-flex align-items-center">
           <span className="uil uil-left-arrow-to-left fs-8" />
           <span className="uil uil-arrow-from-right fs-8" />
-          <span className="navbar-vertical-footer-text ms-2">Vue réduite</span>
+          <span className="navbar-vertical-footer-text ms-2">{t("nav.collapsedView")}</span>
         </button>
       </div>
     </nav>

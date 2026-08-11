@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const routesData = [
   {
@@ -74,6 +75,7 @@ const routesData = [
 ];
 
 const TopRoutesTable = () => {
+  const { t } = useTranslation();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(routesData.length / itemsPerPage);
@@ -85,9 +87,9 @@ const TopRoutesTable = () => {
   return (
     <div>
       <div className="mb-5 mt-7">
-        <h3>Top routes par volume</h3>
+        <h3>{t("dashboard.topRoutesTitle")}</h3>
         <p className="text-body-tertiary">
-          Routes générant le plus d'expéditions ce mois-ci
+          {t("dashboard.topRoutesDesc")}
         </p>
       </div>
       <div className="table-responsive scrollbar">
@@ -99,35 +101,35 @@ const TopRoutesTable = () => {
                 scope="col"
                 style={{ width: "32%" }}
               >
-                ROUTE
+                {t("dashboard.route")}
               </th>
               <th
                 className="sort border-top border-translucent align-middle"
                 scope="col"
                 style={{ width: "17%" }}
               >
-                EXPÉDITIONS
+                {t("dashboard.shipments")}
               </th>
               <th
                 className="sort border-top border-translucent text-end align-middle"
                 scope="col"
                 style={{ width: "16%" }}
               >
-                VOLUME
+                {t("dashboard.volume")}
               </th>
               <th
                 className="sort border-top border-translucent text-end align-middle"
                 scope="col"
                 style={{ width: "20%" }}
               >
-                COÛT MOY. (FCFA)
+                {t("dashboard.avgCost")}
               </th>
               <th
                 className="sort border-top border-translucent text-end pe-0 align-middle"
                 scope="col"
                 style={{ width: "15%" }}
               >
-                À L'HEURE
+                {t("dashboard.onTime")}
               </th>
             </tr>
           </thead>
@@ -211,9 +213,11 @@ const TopRoutesTable = () => {
         <div className="pagination d-none" />
         <div className="col d-flex fs-9">
           <p className="mb-0 d-none d-sm-block me-3 fw-semibold text-body">
-            {(currentPage - 1) * itemsPerPage + 1}-
-            {Math.min(currentPage * itemsPerPage, routesData.length)} sur{" "}
-            {routesData.length}
+            {t("dashboard.pageRange", {
+              from: (currentPage - 1) * itemsPerPage + 1,
+              to: Math.min(currentPage * itemsPerPage, routesData.length),
+              total: routesData.length,
+            })}
           </p>
         </div>
         <div className="col-auto d-flex">
@@ -224,7 +228,7 @@ const TopRoutesTable = () => {
             onClick={() => setCurrentPage((p) => p - 1)}
           >
             <span className="fas fa-chevron-left me-2" />
-            Précédent
+            {t("dashboard.previous")}
           </button>
           <button
             className="btn btn-link px-1 ms-1"
@@ -232,7 +236,7 @@ const TopRoutesTable = () => {
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => p + 1)}
           >
-            Suivant
+            {t("dashboard.next")}
             <span className="fas fa-chevron-right ms-2" />
           </button>
         </div>

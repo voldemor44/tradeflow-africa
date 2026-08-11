@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 // === CONFIGURATION ===
 const MAPBOX_CONFIG = {
@@ -106,6 +107,7 @@ const FlightMap = ({
   mapConfig = {},
   showControls = true,
 }) => {
+  const { t } = useTranslation();
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
@@ -144,7 +146,7 @@ const FlightMap = ({
     flightPoints.forEach(({ coords, id, label }) => {
       const markerElement = document.createElement("div");
       markerElement.className = `marker-${id}`;
-      markerElement.title = label || `Point ${id}`;
+      markerElement.title = label || t("travelAgency.point", { id });
 
       new window.mapboxgl.Marker(markerElement).setLngLat(coords).addTo(map);
     });
@@ -226,7 +228,7 @@ const FlightMap = ({
       document.body.removeEventListener("clickControl", handleThemeChange);
       map.remove();
     };
-  }, [flightPoints, routes, finalConfig]);
+  }, [flightPoints, routes, finalConfig, t]);
 
   // === HANDLERS DES CONTRÔLES ===
 
@@ -243,7 +245,7 @@ const FlightMap = ({
         ref={mapContainerRef}
         className="map rounded-3"
         id="flightMap"
-        aria-label="Flight route map"
+        aria-label={t("travelAgency.flightRouteMap")}
       />
 
       {/* Contrôles de navigation */}
@@ -252,24 +254,24 @@ const FlightMap = ({
           <button
             className="zoomIn d-none d-md-block"
             onClick={handleZoomIn}
-            aria-label="Zoom in"
-            title="Zoom in"
+            aria-label={t("travelAgency.zoomIn")}
+            title={t("travelAgency.zoomIn")}
           >
             <span className="fa-solid fa-plus" />
           </button>
           <button
             className="zoomOut d-none d-md-block"
             onClick={handleZoomOut}
-            aria-label="Zoom out"
-            title="Zoom out"
+            aria-label={t("travelAgency.zoomOut")}
+            title={t("travelAgency.zoomOut")}
           >
             <span className="fa-solid fa-minus" />
           </button>
           <button
             className="fullScreen mt-md-3"
             onClick={handleFullscreen}
-            aria-label="Toggle fullscreen"
-            title="Toggle fullscreen"
+            aria-label={t("travelAgency.toggleFullscreen")}
+            title={t("travelAgency.toggleFullscreen")}
           >
             <span className="fa-solid fa-up-right-and-down-left-from-center" />
           </button>

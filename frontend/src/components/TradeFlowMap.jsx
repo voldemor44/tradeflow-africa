@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import { useTranslation } from "react-i18next";
 
@@ -18,6 +18,46 @@ const MAPBOX_CONFIG = {
 };
 
 mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
+
+// ─── CACHE STYLE ───────────────────────────────────────────
+// Le JSON du style est téléchargé une seule fois puis réutilisé
+// à chaque navigation / changement de thème (aucun re-téléchargement).
+
+const STYLE_CACHE = new Map();
+
+const toStyleHttpUrl = (url) => {
+  if (!url.startsWith("mapbox://")) return url;
+  const [, type, username, styleId] = url.split("/");
+  if (type !== "styles" || !username || !styleId) return url;
+  return `https://api.mapbox.com/styles/v1/${username}/${styleId}`;
+};
+
+const getCachedStyle = (url) => {
+  const cached = STYLE_CACHE.get(url);
+  if (cached) return Promise.resolve(cached);
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15_000);
+
+  const httpUrl = toStyleHttpUrl(url);
+  const sep = httpUrl.includes("?") ? "&" : "?";
+  const requestUrl = `${httpUrl}${sep}access_token=${MAPBOX_CONFIG.accessToken}`;
+
+  return fetch(requestUrl, { signal: controller.signal })
+    .then((res) => {
+      if (!res.ok) throw new Error(`Style fetch failed: ${res.status}`);
+      return res.json();
+    })
+    .then((style) => {
+      STYLE_CACHE.set(url, style);
+      return style;
+    })
+    .catch((err) => {
+      STYLE_CACHE.delete(url);
+      throw err;
+    })
+    .finally(() => clearTimeout(timer));
+};
 
 const MODE_COLORS = {
   sea: { primary: "#0dcaf0", secondary: "#0a9abd" },
@@ -156,6 +196,7 @@ const TradeFlowMap = ({
   const mapRef = useRef(null);
   const markersRef = useRef({});
   const popupRef = useRef(null);
+  const [mapReady, setMapReady] = useState(false);
   // Refs stables : évitent de recréer tous les marqueurs à chaque re-rendu
   const onSelectRef = useRef(onSelect);
   const tRef = useRef(t);
@@ -169,7 +210,7 @@ const TradeFlowMap = ({
     tRef.current = t;
   }, [t]);
 
-  // ── Initialisation ─────────────────────────────────────
+  // ── Initialisation (style mis en cache pour éviter de le re-télécharger) ──
   useEffect(() => {
     if (!mapboxgl || !containerRef.current) return;
 
@@ -196,34 +237,54 @@ const TradeFlowMap = ({
 
     mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
     const theme = window.config?.config?.phoenixTheme ?? "light";
-    const mapStyle = MAPBOX_CONFIG.styles[theme] ?? MAPBOX_CONFIG.styles.light;
+    const styleUrl = MAPBOX_CONFIG.styles[theme] ?? MAPBOX_CONFIG.styles.light;
 
-    const map = new mapboxgl.Map({
-      container: containerRef.current,
-      style: mapStyle,
-      center: MAPBOX_CONFIG.defaultCenter,
-      zoom: MAPBOX_CONFIG.defaultZoom,
-      pitch: MAPBOX_CONFIG.defaultPitch,
-      attributionControl: false,
-    });
-
-    mapRef.current = map;
-    popupRef.current = new mapboxgl.Popup({
-      closeButton: true,
-      closeOnClick: false,
-      maxWidth: "260px",
-    });
+    let cancelled = false;
 
     const onThemeChange = ({ detail: { control } }) => {
       if (control !== "phoenixTheme") return;
-      const t = window.config.config.phoenixTheme;
-      map.setStyle(MAPBOX_CONFIG.styles[t] ?? MAPBOX_CONFIG.styles.light);
+      const nextTheme = window.config.config.phoenixTheme;
+      const nextUrl =
+        MAPBOX_CONFIG.styles[nextTheme] ?? MAPBOX_CONFIG.styles.light;
+      getCachedStyle(nextUrl)
+        .then((style) => mapRef.current?.setStyle(style))
+        .catch(() => mapRef.current?.setStyle(nextUrl));
     };
-    document.body.addEventListener("clickControl", onThemeChange);
+
+    const initMap = (style) => {
+      const map = new mapboxgl.Map({
+        container: containerRef.current,
+        style, // objet (cache) ou URL (repli d'origine)
+        center: MAPBOX_CONFIG.defaultCenter,
+        zoom: MAPBOX_CONFIG.defaultZoom,
+        pitch: MAPBOX_CONFIG.defaultPitch,
+        attributionControl: false,
+      });
+
+      mapRef.current = map;
+      popupRef.current = new mapboxgl.Popup({
+        closeButton: true,
+        closeOnClick: false,
+        maxWidth: "260px",
+      });
+
+      document.body.addEventListener("clickControl", onThemeChange);
+      setMapReady(true);
+    };
+
+    getCachedStyle(styleUrl)
+      .then((style) => {
+        if (!cancelled) initMap(style);
+      })
+      .catch(() => {
+        // Cache froid ou erreur réseau → comportement d'origine
+        if (!cancelled) initMap(styleUrl);
+      });
 
     return () => {
+      cancelled = true;
       document.body.removeEventListener("clickControl", onThemeChange);
-      map.remove();
+      mapRef.current?.remove();
       mapRef.current = null;
       popupRef.current = null;
       markersRef.current = {};
@@ -333,7 +394,7 @@ const TradeFlowMap = ({
         map.off("load", addContent);
       };
     }
-  }, [shipments, selectedId]);
+  }, [shipments, selectedId, mapReady]);
 
   // ── Rafraîchit la popup ouverte au changement de langue ──
   useEffect(() => {
@@ -351,7 +412,7 @@ const TradeFlowMap = ({
     const pos = s?.vessel ?? s?.road;
     if (!pos?.lat || !pos?.lng) return;
     map.flyTo({ center: [pos.lng, pos.lat], zoom: 5, speed: 1.2, curve: 1.4 });
-  }, [selectedId, shipments]);
+  }, [selectedId, shipments, mapReady]);
 
   // ── Handlers ───────────────────────────────────────────
   const zoomIn = () => mapRef.current?.zoomIn();

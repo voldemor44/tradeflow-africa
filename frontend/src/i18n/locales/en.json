@@ -839,6 +839,7 @@
     "all": "All",
     "loading": "Loading…",
     "noActiveShipments": "No active shipments",
+    "loadError": "Error loading shipments",
     "expedition": "shipment",
     "displayed": "displayed"
   }

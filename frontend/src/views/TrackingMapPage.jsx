@@ -1,8 +1,19 @@
-import { useState, useEffect, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  memo,
+  lazy,
+  Suspense,
+} from "react";
 import { NavLink } from "react-router-dom";
 import axiosClient from "../axios-client";
-import TradeFlowMap from "../components/TradeFlowMap";
 import { useTranslation } from "react-i18next";
+
+// La carte (mapbox-gl) est chargée à la demande : chunk séparé,
+// pas téléchargé tant que la page n'est pas ouverte.
+const TradeFlowMap = lazy(() => import("../components/TradeFlowMap"));
 
 // ─── CONFIG ────────────────────────────────────────────────
 
@@ -38,152 +49,55 @@ const getStatusConfig = (t) => ({
   out_for_delivery: { label: t("expeditions.statusOutForDelivery"), badge: "info" },
 });
 
+const MONTHS = [
+  "Jan",
+  "Fév",
+  "Mar",
+  "Avr",
+  "Mai",
+  "Juin",
+  "Jul",
+  "Aoû",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Déc",
+];
+
+// Gère aussi les horodatages complets ("2025-02-10T00:00:00Z")
 const fmtDate = (iso) => {
   if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
-  const mo = [
-    "Jan",
-    "Fév",
-    "Mar",
-    "Avr",
-    "Mai",
-    "Juin",
-    "Jul",
-    "Aoû",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Déc",
-  ];
-  return `${d} ${mo[+m - 1]} ${y}`;
+  const [y, m, d] = String(iso).slice(0, 10).split("-");
+  const mm = +m - 1;
+  if (!y || !m || !d || mm < 0 || mm > 11) return "—";
+  return `${d} ${MONTHS[mm]} ${y}`;
 };
 
-// Expéditions actives en transit (données de démo, remplacer par API)
-const DEMO_SHIPMENTS = [
-  {
-    id: "uuid-1",
-    reference: "TFA-2025-00042",
-    transport_mode: "sea",
-    status: "on_vessel",
-    status_display: "En mer",
-    goods_description: "Équipements informatiques",
-    origin_country: "CN",
-    origin_port_or_city: "Shanghai",
-    destination_country: "BJ",
-    destination_port_or_city: "Cotonou",
-    estimated_arrival: "2025-02-10",
-    freight_forwarder_name: "MAERSK Bénin",
-    declared_value: "18500000",
-    currency: "XOF",
-    vessel: {
-      name: "MSC COTONOU",
-      lat: 8.5,
-      lng: 18.2,
-      heading: 255,
-      speed: 14.2,
-      progress: 62,
-    },
-  },
-  {
-    id: "uuid-2",
-    reference: "TFA-2025-00041",
-    transport_mode: "sea",
-    status: "at_dest_port",
-    status_display: "Au port",
-    goods_description: "Matériaux de construction",
-    origin_country: "FR",
-    origin_port_or_city: "Marseille",
-    destination_country: "BJ",
-    destination_port_or_city: "Cotonou",
-    estimated_arrival: "2025-01-28",
-    freight_forwarder_name: "CMA CGM Bénin",
-    declared_value: "9200000",
-    currency: "XOF",
-    vessel: {
-      name: "CMA CGM ABIDJAN",
-      lat: 6.35,
-      lng: 2.43,
-      heading: 180,
-      speed: 0,
-      progress: 100,
-    },
-  },
-  {
-    id: "uuid-3",
-    reference: "TFA-2025-00039",
-    transport_mode: "road",
-    status: "in_transit",
-    status_display: "En transit",
-    goods_description: "Génératrices électriques",
-    origin_country: "GH",
-    origin_port_or_city: "Accra",
-    destination_country: "BJ",
-    destination_port_or_city: "Cotonou",
-    estimated_arrival: "2025-02-03",
-    freight_forwarder_name: "Trans-ECOWAS",
-    declared_value: "8900000",
-    currency: "XOF",
-    road: {
-      plate: "BJ4521RB",
-      driver: "Kofi Asante",
-      lat: 7.1,
-      lng: 1.2,
-      progress: 45,
-    },
-  },
-  {
-    id: "uuid-4",
-    reference: "TFA-2025-00038",
-    transport_mode: "sea",
-    status: "on_vessel",
-    status_display: "En mer",
-    goods_description: "Équipements solaires",
-    origin_country: "CN",
-    origin_port_or_city: "Guangzhou",
-    destination_country: "BJ",
-    destination_port_or_city: "Cotonou",
-    estimated_arrival: "2025-02-20",
-    freight_forwarder_name: "MAERSK Bénin",
-    declared_value: "41200000",
-    currency: "XOF",
-    vessel: {
-      name: "COSCO AFRICA",
-      lat: 3.2,
-      lng: 8.8,
-      heading: 210,
-      speed: 16.1,
-      progress: 30,
-    },
-  },
-  {
-    id: "uuid-5",
-    reference: "TFA-2025-00037",
-    transport_mode: "sea",
-    status: "on_hold",
-    status_display: "Bloquée",
-    goods_description: "Produits chimiques",
-    origin_country: "NL",
-    origin_port_or_city: "Rotterdam",
-    destination_country: "BJ",
-    destination_port_or_city: "Cotonou",
-    estimated_arrival: "2025-01-30",
-    freight_forwarder_name: "Bolloré Logistics",
-    declared_value: "7400000",
-    currency: "XOF",
-    vessel: {
-      name: "HAPAG LLOYD 1",
-      lat: 6.35,
-      lng: 2.43,
-      heading: 0,
-      speed: 0,
-      progress: 88,
-    },
-  },
-];
+// Valeur finie sinon "—" (évite les "NaN" à l'écran)
+const fmtFinite = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : "—";
+};
+
+const fmtFixed = (v, digits = 4) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n.toFixed(digits) : "—";
+};
+
+// Progression estimée entre deux dates
+const computeProgress = (etd, eta) => {
+  if (!etd || !eta) return 0;
+  const start = new Date(etd).getTime();
+  const end = new Date(eta).getTime();
+  const now = Date.now();
+  if (now <= start) return 0;
+  if (now >= end) return 100;
+  return Math.round(((now - start) / (end - start)) * 100);
+};
 
 // ─── SOUS-COMPOSANTS ───────────────────────────────────────
 
-const KpiCard = ({ icon, label, value, badge, sub }) => (
+const KpiCard = memo(({ icon, label, value, badge, sub }) => (
   <div className="col-6 col-xl-3">
     <div className="card h-100">
       <div className="card-body d-flex align-items-center gap-3 py-3">
@@ -203,12 +117,16 @@ const KpiCard = ({ icon, label, value, badge, sub }) => (
       </div>
     </div>
   </div>
-);
+));
 
-const ShipmentListItem = ({ s, selected, onClick }) => {
+const ShipmentListItem = memo(function ShipmentListItem({
+  s,
+  selected,
+  onSelect,
+}) {
   const { t } = useTranslation();
-  const MODE_CONFIG = getModeConfig(t);
-  const STATUS_CONFIG = getStatusConfig(t);
+  const MODE_CONFIG = useMemo(() => getModeConfig(t), [t]);
+  const STATUS_CONFIG = useMemo(() => getStatusConfig(t), [t]);
   const mode = MODE_CONFIG[s.transport_mode] ?? MODE_CONFIG.sea;
   const st = STATUS_CONFIG[s.status] ?? {
     label: s.status_display,
@@ -216,12 +134,13 @@ const ShipmentListItem = ({ s, selected, onClick }) => {
   };
   const pos = s.vessel ?? s.road;
   const isBlocked = s.status === "on_hold";
+  const progress = pos?.progress ?? 0;
 
   return (
     <div
       className={`p-3 border-bottom ${selected ? "bg-primary-subtle" : ""}`}
       style={{ cursor: "pointer", transition: "background .15s" }}
-      onClick={onClick}
+      onClick={() => onSelect(s)}
       onMouseEnter={(e) => {
         if (!selected)
           e.currentTarget.style.background = "var(--phoenix-body-tertiary-bg)";
@@ -281,14 +200,14 @@ const ShipmentListItem = ({ s, selected, onClick }) => {
             <span
               className={`fs-10 fw-semibold ${isBlocked ? "text-danger" : "text-body"}`}
             >
-              {pos.progress}%
+              {progress}%
             </span>
           </div>
           <div className="progress" style={{ height: 5 }}>
             <div
               className={`progress-bar bg-${isBlocked ? "danger" : mode.badge}`}
               style={{
-                width: `${pos.progress}%`,
+                width: `${progress}%`,
                 transition: "width .4s ease",
               }}
             />
@@ -297,19 +216,21 @@ const ShipmentListItem = ({ s, selected, onClick }) => {
       )}
     </div>
   );
-};
+});
 
-const ShipmentDetailPanel = ({ s, onClose }) => {
+const ShipmentDetailPanel = memo(function ShipmentDetailPanel({ s, onClose }) {
   const { t } = useTranslation();
+  const MODE_CONFIG = useMemo(() => getModeConfig(t), [t]);
+  const STATUS_CONFIG = useMemo(() => getStatusConfig(t), [t]);
   if (!s) return null;
-  const MODE_CONFIG = getModeConfig(t);
-  const STATUS_CONFIG = getStatusConfig(t);
   const mode = MODE_CONFIG[s.transport_mode] ?? MODE_CONFIG.sea;
   const st = STATUS_CONFIG[s.status] ?? {
     label: s.status_display,
     badge: "secondary",
   };
   const pos = s.vessel ?? s.road;
+  const progress = pos?.progress ?? 0;
+  const declared = Number(s.declared_value);
 
   return (
     <div
@@ -384,12 +305,12 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
               <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-0">
                 {t("trackingMap.progression")}
               </p>
-              <span className="fs-10 fw-bold text-body">{pos.progress}%</span>
+              <span className="fs-10 fw-bold text-body">{progress}%</span>
             </div>
             <div className="progress" style={{ height: 6 }}>
               <div
                 className={`progress-bar bg-${mode.badge}`}
-                style={{ width: `${pos.progress}%` }}
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>
@@ -406,22 +327,22 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
               <div className="row g-2">
                 <div className="col-6">
                   <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.speed")}</p>
-                  <p className="mb-0 fs-10 fw-semibold">{s.vessel.speed} kn</p>
+                  <p className="mb-0 fs-10 fw-semibold">{fmtFinite(s.vessel.speed)} kn</p>
                 </div>
                 <div className="col-6">
                   <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.heading")}</p>
-                  <p className="mb-0 fs-10 fw-semibold">{s.vessel.heading}°</p>
+                  <p className="mb-0 fs-10 fw-semibold">{fmtFinite(s.vessel.heading)}°</p>
                 </div>
                 <div className="col-6">
                   <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.latitude")}</p>
                   <p className="mb-0 fs-10 fw-semibold">
-                    {s.vessel.lat.toFixed(4)}°
+                    {fmtFixed(s.vessel.lat)}°
                   </p>
                 </div>
                 <div className="col-6">
                   <p className="mb-0 fs-11 text-body-tertiary">{t("trackingMap.longitude")}</p>
                   <p className="mb-0 fs-10 fw-semibold">
-                    {s.vessel.lng.toFixed(4)}°
+                    {fmtFixed(s.vessel.lng)}°
                   </p>
                 </div>
               </div>
@@ -472,7 +393,10 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
           <div className="d-flex justify-content-between">
             <span className="fs-10 text-body-tertiary">{t("trackingMap.declaredValue")}</span>
             <span className="fs-10 fw-semibold">
-              {Number(s.declared_value).toLocaleString("fr-FR")} {s.currency}
+              {Number.isFinite(declared)
+                ? declared.toLocaleString("fr-FR")
+                : "—"}{" "}
+              {s.currency}
             </span>
           </div>
         </div>
@@ -496,178 +420,21 @@ const ShipmentDetailPanel = ({ s, onClose }) => {
       </div>
     </div>
   );
-};
+});
 
-// ─── CARTE PLACEHOLDER ─────────────────────────────────────
-// En production : remplacer par Leaflet / Mapbox / Google Maps
-
-const MapPlaceholder = ({ shipments, selectedId, onSelect }) => {
+// Fallback affiché pendant le chargement du chunk de la carte
+const MapSkeleton = () => {
   const { t } = useTranslation();
-  const MODE_CONFIG = getModeConfig(t);
   return (
-  <div
-    className="position-relative w-100 h-100 bg-body-tertiary overflow-hidden rounded-2"
-    style={{
-      minHeight: 480,
-      background:
-        "linear-gradient(135deg, #e8f4f8 0%, #d4e8f0 50%, #c8e0ea 100%)",
-    }}
-  >
-    {/* Grille décorative */}
-    <svg
-      className="position-absolute w-100 h-100 opacity-25"
-      style={{ top: 0, left: 0 }}
+    <div
+      className="d-flex align-items-center justify-content-center w-100 h-100 bg-body-tertiary rounded-2"
+      style={{ minHeight: 480 }}
     >
-      <defs>
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path
-            d="M 40 0 L 0 0 0 40"
-            fill="none"
-            stroke="#0dcaf0"
-            strokeWidth="0.5"
-          />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-    </svg>
-
-    {/* Continents simplifiés (SVG décoratif) */}
-    <svg
-      viewBox="0 0 1000 500"
-      className="position-absolute w-100 h-100 opacity-20"
-      style={{ top: 0, left: 0 }}
-    >
-      {/* Afrique */}
-      <ellipse cx="520" cy="280" rx="65" ry="90" fill="#6c757d" />
-      {/* Europe */}
-      <ellipse cx="505" cy="170" rx="50" ry="35" fill="#6c757d" />
-      {/* Asie */}
-      <ellipse cx="680" cy="190" rx="120" ry="65" fill="#6c757d" />
-      {/* Amériques */}
-      <ellipse cx="260" cy="210" rx="65" ry="100" fill="#6c757d" />
-    </svg>
-
-    {/* Message intégration carte */}
-    <div className="position-absolute top-50 start-50 translate-middle text-center z-5">
-      <div className="card border shadow-sm px-4 py-3">
-        <span className="fas fa-map-marked-alt fs-4 text-primary mb-2" />
-        <p className="fs-9 mb-1 fw-semibold">{t("trackingMap.interactiveMap")}</p>
-        <p className="fs-10 text-body-tertiary mb-2">
-          {t("trackingMap.integrateMap")}
-          <br />
-          {t("trackingMap.toDisplayPositions")}
-        </p>
-        <code className="fs-11 text-body-tertiary">
-          npm install leaflet react-leaflet
-        </code>
+      <div className="text-center text-body-tertiary">
+        <span className="spinner-border spinner-border-sm me-2" />
+        {t("trackingMap.loading")}
       </div>
     </div>
-
-    {/* Marqueurs simulés */}
-    {shipments.map((s) => {
-      const pos = s.vessel ?? s.road;
-      const mode = MODE_CONFIG[s.transport_mode] ?? MODE_CONFIG.sea;
-      if (!pos) return null;
-
-      // Convertit lat/lng en % de la zone visible (approximatif pour la démo)
-      const x = ((pos.lng + 20) / 80) * 100;
-      const y = ((20 - pos.lat) / 40) * 100;
-      const isSelected = s.id === selectedId;
-      const isBlocked = s.status === "on_hold";
-
-      return (
-        <div
-          key={s.id}
-          className="position-absolute"
-          style={{
-            left: `${Math.max(5, Math.min(90, x))}%`,
-            top: `${Math.max(5, Math.min(90, y))}%`,
-            transform: "translate(-50%, -50%)",
-            zIndex: isSelected ? 20 : 10,
-            cursor: "pointer",
-          }}
-          onClick={() => onSelect(s)}
-        >
-          {/* Pulse pour les bloquées */}
-          {isBlocked && (
-            <div
-              className="position-absolute top-50 start-50 translate-middle rounded-circle bg-danger opacity-25"
-              style={{
-                width: 32,
-                height: 32,
-                animation: "pulse 1.5s infinite",
-              }}
-            />
-          )}
-          <div
-            className={`d-flex align-items-center justify-content-center rounded-circle border-2 shadow ${isSelected ? "border-primary" : "border-white"}`}
-            style={{
-              width: isSelected ? 36 : 28,
-              height: isSelected ? 36 : 28,
-              backgroundColor: isBlocked ? "#dc3545" : mode.color,
-              transition: "all .2s",
-            }}
-          >
-            <span
-              className={`fas ${mode.icon} text-white`}
-              style={{ fontSize: isSelected ? 14 : 11 }}
-            />
-          </div>
-          {isSelected && (
-            <div
-              className="position-absolute bg-body rounded-2 shadow px-2 py-1 text-nowrap fs-11 fw-semibold"
-              style={{
-                bottom: "calc(100% + 6px)",
-                left: "50%",
-                transform: "translateX(-50%)",
-              }}
-            >
-              {s.reference}
-            </div>
-          )}
-        </div>
-      );
-    })}
-
-    {/* Légende */}
-    <div className="position-absolute bottom-0 start-0 m-3">
-      <div className="card border shadow-sm">
-        <div className="card-body py-2 px-3">
-          <p className="fs-11 fw-semibold text-body-tertiary text-uppercase mb-2">
-            {t("trackingMap.legend")}
-          </p>
-          {Object.entries(MODE_CONFIG).map(([k, v]) => (
-            <div key={k} className="d-flex align-items-center gap-2 mb-1">
-              <div
-                className="rounded-circle d-flex align-items-center justify-content-center"
-                style={{ width: 18, height: 18, backgroundColor: v.color }}
-              >
-                <span
-                  className={`fas ${v.icon} text-white`}
-                  style={{ fontSize: 8 }}
-                />
-              </div>
-              <span className="fs-11 text-body-tertiary">{v.label}</span>
-            </div>
-          ))}
-          <div className="d-flex align-items-center gap-2">
-            <div
-              className="rounded-circle bg-danger d-flex align-items-center justify-content-center"
-              style={{ width: 18, height: 18 }}
-            >
-              <span
-                className="fas fa-exclamation text-white"
-                style={{ fontSize: 8 }}
-              />
-            </div>
-            <span className="fs-11 text-danger fw-semibold">
-              {t("expeditions.statusOnHold")}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
   );
 };
 
@@ -675,25 +442,25 @@ const MapPlaceholder = ({ shipments, selectedId, onSelect }) => {
 
 export default function TrackingMapPage() {
   const { t } = useTranslation();
-  const MODE_CONFIG = getModeConfig(t);
+  const MODE_CONFIG = useMemo(() => getModeConfig(t), [t]);
   const [shipments, setShipments] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selected, setSelected] = useState(null);
   const [modeFilter, setModeFilter] = useState("");
   const [search, setSearch] = useState("");
 
-  const computeProgress = (etd, eta) => {
-    if (!etd || !eta) return 0;
-    const start = new Date(etd).getTime();
-    const end = new Date(eta).getTime();
-    const now = Date.now();
-    if (now <= start) return 0;
-    if (now >= end) return 100;
-    return Math.round(((now - start) / (end - start)) * 100);
-  };
+  // Sélection/déselection (identité stable → pas de re-rendu de la liste)
+  const toggleSelect = useCallback((s) => {
+    setSelected((prev) => (prev?.id === s.id ? null : s));
+  }, []);
+
+  const clearSelection = useCallback(() => setSelected(null), []);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
+    setError(false);
 
     Promise.all([
       axiosClient.get("/shipments/", {
@@ -712,6 +479,8 @@ export default function TrackingMapPage() {
           { data: vesselData },
           { data: roadData },
         ]) => {
+          if (cancelled) return;
+
           // Indexe les trackings par shipment ID pour lookup O(1)
           const vesselByShipment = {};
           (vesselData.results ?? vesselData).forEach((v) => {
@@ -765,7 +534,16 @@ export default function TrackingMapPage() {
           setShipments(enriched);
         },
       )
-      .finally(() => setLoading(false));
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = useMemo(
@@ -775,10 +553,10 @@ export default function TrackingMapPage() {
         if (search) {
           const q = search.toLowerCase();
           return (
-            s.reference.toLowerCase().includes(q) ||
-            s.goods_description.toLowerCase().includes(q) ||
-            s.origin_port_or_city.toLowerCase().includes(q) ||
-            s.destination_port_or_city.toLowerCase().includes(q)
+            (s.reference ?? "").toLowerCase().includes(q) ||
+            (s.goods_description ?? "").toLowerCase().includes(q) ||
+            (s.origin_port_or_city ?? "").toLowerCase().includes(q) ||
+            (s.destination_port_or_city ?? "").toLowerCase().includes(q)
           );
         }
         return true;
@@ -908,6 +686,11 @@ export default function TrackingMapPage() {
                     <span className="spinner-border spinner-border-sm me-2" />
                     {t("trackingMap.loading")}
                   </div>
+                ) : error ? (
+                  <div className="text-center py-6 text-body-tertiary">
+                    <span className="fas fa-triangle-exclamation fs-3 d-block mb-2 opacity-50" />
+                    <p className="mb-0 fs-9">{t("trackingMap.loadError")}</p>
+                  </div>
                 ) : filtered.length === 0 ? (
                   <div className="text-center py-6 text-body-tertiary">
                     <span className="fas fa-map-marker-alt fs-3 d-block mb-2 opacity-50" />
@@ -919,9 +702,7 @@ export default function TrackingMapPage() {
                       key={s.id}
                       s={s}
                       selected={selected?.id === s.id}
-                      onClick={() =>
-                        setSelected(selected?.id === s.id ? null : s)
-                      }
+                      onSelect={toggleSelect}
                     />
                   ))
                 )}
@@ -945,19 +726,19 @@ export default function TrackingMapPage() {
               style={{ minHeight: 480 }}
             >
               <div className="p-3" style={{ height: "100%" }}>
-                <TradeFlowMap
-                  shipments={filtered}
-                  selectedId={selected?.id}
-                  onSelect={(s) =>
-                    setSelected(selected?.id === s.id ? null : s)
-                  }
-                />
+                <Suspense fallback={<MapSkeleton />}>
+                  <TradeFlowMap
+                    shipments={filtered}
+                    selectedId={selected?.id}
+                    onSelect={toggleSelect}
+                  />
+                </Suspense>
               </div>
 
               {/* Panneau détail glissant */}
               <ShipmentDetailPanel
                 s={selected}
-                onClose={() => setSelected(null)}
+                onClose={clearSelection}
               />
             </div>
           </div>

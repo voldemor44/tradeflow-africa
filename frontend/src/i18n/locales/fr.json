@@ -839,6 +839,7 @@
     "all": "Tous",
     "loading": "Chargement…",
     "noActiveShipments": "Aucune expédition active",
+    "loadError": "Erreur lors du chargement des expéditions",
     "expedition": "expédition",
     "displayed": "affichée"
   }

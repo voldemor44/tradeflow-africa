@@ -26,11 +26,6 @@ const MODE_COLORS = {
   multi: { primary: "#198754", secondary: "#146c43" },
 };
 
-const getThemeColor = (name, fallback) =>
-  window.phoenix?.utils?.getColor?.(name) || fallback;
-
-const isDark = () => window.config?.config?.phoenixTheme === "dark";
-
 // ─── HELPERS ───────────────────────────────────────────────
 
 const createMarkerEl = (shipment, isSelected) => {
@@ -161,6 +156,18 @@ const TradeFlowMap = ({
   const mapRef = useRef(null);
   const markersRef = useRef({});
   const popupRef = useRef(null);
+  // Refs stables : évitent de recréer tous les marqueurs à chaque re-rendu
+  const onSelectRef = useRef(onSelect);
+  const tRef = useRef(t);
+  const lastPopupShipmentRef = useRef(null);
+
+  useEffect(() => {
+    onSelectRef.current = onSelect;
+  }, [onSelect]);
+
+  useEffect(() => {
+    tRef.current = t;
+  }, [t]);
 
   // ── Initialisation ─────────────────────────────────────
   useEffect(() => {
@@ -218,6 +225,7 @@ const TradeFlowMap = ({
       document.body.removeEventListener("clickControl", onThemeChange);
       map.remove();
       mapRef.current = null;
+      popupRef.current = null;
       markersRef.current = {};
     };
   }, []);
@@ -227,7 +235,10 @@ const TradeFlowMap = ({
     const map = mapRef.current;
     if (!map) return;
 
+    let cancelled = false;
+
     const addContent = () => {
+      if (cancelled) return;
       Object.values(markersRef.current).forEach(({ marker }) =>
         marker.remove(),
       );
@@ -260,10 +271,11 @@ const TradeFlowMap = ({
 
         el.addEventListener("click", (e) => {
           e.stopPropagation();
-          onSelect(s);
+          lastPopupShipmentRef.current = s;
+          onSelectRef.current(s);
           popupRef.current
             .setLngLat(coords)
-            .setHTML(createPopupHTML(s, t))
+            .setHTML(createPopupHTML(s, tRef.current))
             .addTo(map);
         });
 
@@ -290,27 +302,46 @@ const TradeFlowMap = ({
         const lineColor = isBlock ? "#dc3545" : colors.primary;
 
         // route line adding 
-        map.addSource(`route-${s.id}`, { type: "geojson", data: routeData });
-        map.addLayer({
-          id: `route-line-${s.id}`,
-          source: `route-${s.id}`,
-          type: "line",
-          paint: {
-            "line-color": lineColor,
-            "line-width": isSelected ? 2.5 : 1.8,
-            "line-opacity": isSelected ? 0.9 : 0.4,
-            "line-dasharray": isBlock ? [2, 2] : [1],
-          },
-        });
+        const sourceId = `route-${s.id}`;
+        const layerId = `route-line-${s.id}`;
+        if (!map.getSource(sourceId)) {
+          map.addSource(sourceId, { type: "geojson", data: routeData });
+        }
+        if (!map.getLayer(layerId)) {
+          map.addLayer({
+            id: layerId,
+            source: sourceId,
+            type: "line",
+            paint: {
+              "line-color": lineColor,
+              "line-width": isSelected ? 2.5 : 1.8,
+              "line-opacity": isSelected ? 0.9 : 0.4,
+              "line-dasharray": isBlock ? [2, 2] : [1],
+            },
+          });
+        }
       });
     };
 
     if (map.isStyleLoaded()) {
       addContent();
     } else {
+      // Évite un double addContent si les props changent pendant le chargement
       map.once("load", addContent);
+      return () => {
+        cancelled = true;
+        map.off("load", addContent);
+      };
     }
-  }, [shipments, selectedId, onSelect, t]);
+  }, [shipments, selectedId]);
+
+  // ── Rafraîchit la popup ouverte au changement de langue ──
+  useEffect(() => {
+    const s = lastPopupShipmentRef.current;
+    if (s && popupRef.current?.isOpen?.()) {
+      popupRef.current.setHTML(createPopupHTML(s, t));
+    }
+  }, [t]);
 
   // ── Fly to sélection ───────────────────────────────────
   useEffect(() => {

@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 
 // La carte (mapbox-gl) est chargée à la demande : chunk séparé,
 // pas téléchargé tant que la page n'est pas ouverte.
-const TradeFlowMap = lazy(() => import("../components/TradeFlowMap"));
+const TradeFlowMap = lazy(() => import("../components/TradeFlowMap/index.jsx"));
 
 // ─── CONFIG ────────────────────────────────────────────────
 

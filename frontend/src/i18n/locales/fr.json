@@ -379,7 +379,12 @@
     "csvETA": "ETA",
     "csvValue": "Valeur",
     "csvCurrency": "Devise",
-    "csvCreated": "Créé le"
+    "csvCreated": "Créé le",
+    "pdfExport": "Liste des expéditions",
+    "printGenerated": "Généré le {{date}}",
+    "printCount": "{{count}} dossiers",
+    "printFilters": "Filtres : {{filters}}",
+    "exporting": "Préparation…"
   },
   "travelAgency": {
     "title": "Agence de voyage",

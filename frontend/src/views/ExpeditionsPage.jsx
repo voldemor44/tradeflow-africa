@@ -1,4 +1,5 @@
-import { useReducer, useMemo, useEffect, useState } from "react";
+import { useReducer, useMemo, useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import NewShipmentModal from "../components/Newshipmentmodal";
 import EditShipmentModal from "../components/Editshipmentmodal";
 import { NavLink } from "react-router-dom";
@@ -109,6 +110,25 @@ const exportCSV = (rows, MODE_CONFIG, t) => {
   );
   window.open(url, "_blank");
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+};
+
+// Récupère TOUTES les lignes (le backend pagine par défaut à 20 par page)
+const fetchAllShipments = async (params) => {
+  const all = [];
+  let page = 1;
+  let count = null;
+  while (count === null || all.length < count) {
+    const { data } = await axiosClient.get("/shipments/", {
+      params: { ...params, page },
+    });
+    count = data.count ?? 0;
+    const results = data.results ?? [];
+    if (results.length === 0) break;
+    all.push(...results);
+    page += 1;
+    if (page > 500) break;
+  }
+  return all;
 };
 
 // ─── REDUCER ───────────────────────────────────────────────
@@ -239,10 +259,168 @@ const SkeletonRow = () => (
   </tr>
 );
 
+// ─── TEMPLATE D'EXPORT PDF (impression) ────────────────────
+const PrintTemplate = ({
+  rows,
+  generatedAt,
+  lang,
+  filters,
+  t,
+  STATUS_CONFIG,
+  MODE_CONFIG,
+}) => {
+  const when = new Intl.DateTimeFormat(lang, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(generatedAt);
+
+  const route = (s) => {
+    const org = s.origin_port_or_city
+      ? `${s.origin_port_or_city}${s.origin_country ? ` (${s.origin_country})` : ""}`
+      : s.origin_country;
+    const dst = s.destination_port_or_city
+      ? `${s.destination_port_or_city}${s.destination_country ? ` (${s.destination_country})` : ""}`
+      : s.destination_country;
+    return [org, dst].filter(Boolean).join(" → ") || "—";
+  };
+  const statusLabel = (s) =>
+    s.status_display || STATUS_CONFIG[s.status]?.label || s.status || "—";
+  const modeLabel = (s) =>
+    s.transport_mode_display ||
+    MODE_CONFIG[s.transport_mode]?.label ||
+    s.transport_mode ||
+    "—";
+
+  return (
+    <div id="print-root" className="d-none d-print-block">
+      <style>{`
+        #print-root {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+            "Helvetica Neue", Arial, sans-serif;
+          color: #1f2937;
+          font-size: 11px;
+        }
+        #print-root .pf-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          gap: 16px;
+          border-bottom: 2px solid #15202b;
+          padding-bottom: 12px;
+          margin-bottom: 14px;
+        }
+        #print-root .pf-title { margin: 0; font-size: 20px; font-weight: 800; }
+        #print-root .pf-meta {
+          font-size: 10.5px;
+          color: #6c757d;
+          text-align: right;
+          line-height: 1.5;
+        }
+        #print-root .pf-meta.pf-left { text-align: left; }
+        #print-root table { width: 100%; border-collapse: collapse; }
+        #print-root table thead th {
+          text-align: left;
+          font-size: 9.5px;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+          color: #6c757d;
+          border-bottom: 1px solid #adb5bd;
+          padding: 6px 8px;
+          white-space: nowrap;
+        }
+        #print-root table tbody td {
+          padding: 6px 8px;
+          border-bottom: 1px solid #edf0f4;
+          vertical-align: top;
+        }
+        #print-root table tbody tr { break-inside: avoid; }
+        #print-root .pf-num { text-align: right; white-space: nowrap; }
+        #print-root .pf-desc { white-space: pre-wrap; }
+        #print-root .pf-empty { text-align: center; color: #6c757d; padding: 24px 8px; }
+        #print-root .pf-footer {
+          margin-top: 14px;
+          font-size: 10.5px;
+          color: #6c757d;
+        }
+        @page { size: A4; margin: 12mm 14mm; }
+        @media print {
+          body > #root { display: none !important; }
+          #print-root { display: block !important; }
+        }
+      `}</style>
+
+      <div className="pf-header">
+        <div>
+          <h1 className="pf-title">{t("expeditions.pdfExport")}</h1>
+          <div className="pf-meta pf-left">
+            {t("expeditions.printGenerated", { date: when })} ·{" "}
+            {t("expeditions.printCount", { count: rows.length })}
+          </div>
+        </div>
+        {filters && <div className="pf-meta">{filters}</div>}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>{t("expeditions.csvRef")}</th>
+            <th>{t("expeditions.csvDesc")}</th>
+            <th>{t("expeditions.route")}</th>
+            <th>{t("expeditions.csvForwarder")}</th>
+            <th>{t("expeditions.csvMode")}</th>
+            <th>{t("expeditions.csvIncoterm")}</th>
+            <th>{t("expeditions.csvStatus")}</th>
+            <th>{t("expeditions.csvETA")}</th>
+            <th className="pf-num">{t("expeditions.csvValue")}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={9} className="pf-empty">
+                {t("expeditions.noExpeditions")}
+              </td>
+            </tr>
+          ) : (
+            rows.map((s) => (
+              <tr key={s.id}>
+                <td>
+                  <div>{s.reference}</div>
+                  <div className="pf-meta pf-left">{fmtDate(s.created_at)}</div>
+                </td>
+                <td className="pf-desc">{s.goods_description || "—"}</td>
+                <td>{route(s)}</td>
+                <td>{s.freight_forwarder_name || "—"}</td>
+                <td>{modeLabel(s)}</td>
+                <td>{s.incoterm || "—"}</td>
+                <td>{statusLabel(s)}</td>
+                <td>{fmtDate(s.estimated_arrival)}</td>
+                <td className="pf-num">
+                  {s.declared_value != null
+                    ? `${fmt(s.declared_value)}${s.currency ? ` ${s.currency}` : ""}`
+                    : "—"}
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+
+      <div className="pf-footer">
+        {t("expeditions.displayRange", {
+          from: 1,
+          to: rows.length,
+          total: rows.length,
+        })}
+      </div>
+    </div>
+  );
+};
+
 // ─── COMPOSANT ─────────────────────────────────────────────
 
 export default function ExpeditionsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const STATUS_CONFIG = getStatusConfig(t);
   const MODE_CONFIG = getModeConfig(t);
   const STATUS_PILLS = getStatusPills(t);
@@ -266,6 +444,11 @@ export default function ExpeditionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+
+  // Export PDF : données à imprimer + état d'export
+  const [printData, setPrintData] = useState(null);
+  const [exporting, setExporting] = useState(false);
+  const printTriggered = useRef(false);
 
   // ── Fetch déclenché par TOUS les paramètres ─────────────
   useEffect(() => {
@@ -349,6 +532,63 @@ export default function ExpeditionsPage() {
   }, [page, totalPages]);
 
   const f = (key, value) => dispatch({ type: "FILTER", key, value });
+
+  // Export PDF : envoie TOUTES les lignes (toutes pages) puis déclenche l'impression
+  const exportPDF = async () => {
+    if (exporting || printData) return;
+    setExporting(true);
+    setError(null);
+    try {
+      const params = { ordering };
+      if (search) params.search = search;
+      if (status) params.status = status;
+      if (mode) params.transport_mode = mode;
+      if (is_archived) params.is_archived = true;
+      if (dateFrom) params.estimated_arrival_after = dateFrom;
+      if (dateTo) params.estimated_arrival_before = dateTo;
+
+      const rows = await fetchAllShipments(params);
+
+      const filters = [
+        status ? (STATUS_CONFIG[status]?.label ?? status) : null,
+        mode ? (MODE_CONFIG[mode]?.label ?? mode) : null,
+        dateFrom ? `${t("expeditions.etaFrom")} ${fmtDate(dateFrom)}` : null,
+        dateTo ? `${t("expeditions.etaTo")} ${fmtDate(dateTo)}` : null,
+        search ? `« ${search} »` : null,
+        is_archived ? t("expeditions.archives") : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+
+      setPrintData({ rows, generatedAt: new Date(), filters });
+    } catch {
+      setError(t("expeditions.errorLoad"));
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  // Déclenche l'impression une fois le template rendu, puis nettoie après
+  useEffect(() => {
+    if (!printData) {
+      printTriggered.current = false;
+      return undefined;
+    }
+    const done = () => {
+      printTriggered.current = false;
+      setPrintData(null);
+    };
+    window.addEventListener("afterprint", done);
+    const timer = setTimeout(() => {
+      if (printTriggered.current) return;
+      printTriggered.current = true;
+      if (typeof window.print === "function") window.print();
+    }, 80);
+    return () => {
+      window.removeEventListener("afterprint", done);
+      clearTimeout(timer);
+    };
+  }, [printData]);
 
   // Archivage
   const archive = (id) =>
@@ -513,10 +753,20 @@ export default function ExpeditionsPage() {
               </button>
               <button
                 className="btn btn-sm btn-phoenix-secondary"
-                onClick={() => window.print()}
+                onClick={exportPDF}
+                disabled={exporting || !!printData}
               >
-                <span className="fas fa-file-pdf me-2" />
-                PDF
+                {exporting ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" />
+                    {t("expeditions.exporting")}
+                  </>
+                ) : (
+                  <>
+                    <span className="fas fa-file-pdf me-2" />
+                    PDF
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -949,6 +1199,20 @@ export default function ExpeditionsPage() {
         onClose={() => dispatch({ type: "CLEAR_EDIT" })}
       />
       <NewShipmentModal onCreated={onCreated} />
+
+      {printData &&
+        createPortal(
+          <PrintTemplate
+            rows={printData.rows}
+            generatedAt={printData.generatedAt}
+            lang={i18n.language}
+            filters={printData.filters}
+            t={t}
+            STATUS_CONFIG={STATUS_CONFIG}
+            MODE_CONFIG={MODE_CONFIG}
+          />,
+          document.body,
+        )}
     </>
   );
 }

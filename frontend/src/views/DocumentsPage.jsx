@@ -1,7 +1,7 @@
-import { useReducer, useEffect, useState, useMemo } from "react";
+import { memo, useReducer, useEffect, useState, useMemo } from "react";
 import { NavLink, useSearchParams } from "react-router-dom";
 import axiosClient from "../axios-client";
-import { useTranslation } from "react-i18next";
+import { useTranslation, Trans } from "react-i18next";
 
 // ─── CONFIG ────────────────────────────────────────────────
 
@@ -449,9 +449,271 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
 
 // ─── COMPOSANT PRINCIPAL ───────────────────────────────────
 
+// Ligne squelette pendant le chargement (alignée sur le contenu réel)
+const SkeletonRow = () => (
+  <tr>
+    {/* Document */}
+    <td className="align-middle ps-3">
+      <div className="d-flex align-items-center gap-3">
+        <div
+          className="bg-body-secondary rounded-2 placeholder-wave flex-shrink-0"
+          style={{ width: 36, height: 36, opacity: 0.4 }}
+        />
+        <div
+          className="bg-body-secondary rounded placeholder-wave"
+          style={{ width: 170, height: 14, opacity: 0.4 }}
+        />
+      </div>
+    </td>
+    {/* Expédition */}
+    <td className="align-middle">
+      <div
+        className="bg-body-secondary rounded placeholder-wave mb-1"
+        style={{ width: 120, height: 12, opacity: 0.4 }}
+      />
+      <div
+        className="bg-body-secondary rounded placeholder-wave"
+        style={{ width: 80, height: 10, opacity: 0.4 }}
+      />
+    </td>
+    {/* Statut */}
+    <td className="align-middle">
+      <div
+        className="bg-body-secondary rounded-pill placeholder-wave"
+        style={{ width: 110, height: 22, opacity: 0.4 }}
+      />
+    </td>
+    {/* Émission */}
+    <td className="align-middle">
+      <div
+        className="bg-body-secondary rounded placeholder-wave"
+        style={{ width: 80, height: 12, opacity: 0.4 }}
+      />
+    </td>
+    {/* Expiration */}
+    <td className="align-middle">
+      <div
+        className="bg-body-secondary rounded placeholder-wave mb-1"
+        style={{ width: 100, height: 12, opacity: 0.4 }}
+      />
+      <div
+        className="bg-body-secondary rounded placeholder-wave"
+        style={{ width: 70, height: 10, opacity: 0.4 }}
+      />
+    </td>
+    {/* Uploadé par */}
+    <td className="align-middle">
+      <div
+        className="bg-body-secondary rounded placeholder-wave mb-1"
+        style={{ width: 110, height: 12, opacity: 0.4 }}
+      />
+      <div
+        className="bg-body-secondary rounded placeholder-wave"
+        style={{ width: 70, height: 10, opacity: 0.4 }}
+      />
+    </td>
+    {/* Taille */}
+    <td className="align-middle">
+      <div
+        className="bg-body-secondary rounded placeholder-wave"
+        style={{ width: 45, height: 12, opacity: 0.4 }}
+      />
+    </td>
+    {/* Actions */}
+    <td className="align-middle pe-3">
+      <div
+        className="bg-body-secondary rounded-3 placeholder-wave"
+        style={{ width: 28, height: 28, opacity: 0.4 }}
+      />
+    </td>
+  </tr>
+);
+
+// Ligne du tableau (mémoïsée pour éviter les re-rendus inutiles)
+const DocumentRow = memo(
+  ({ doc, t, VALIDATION_CONFIG, onSelect, onValidate }) => {
+    const fmt = FORMAT_CONFIG[doc.file_format] ?? FORMAT_CONFIG.other;
+    const val =
+      VALIDATION_CONFIG[doc.validation_status] ?? VALIDATION_CONFIG.pending;
+    const expiring =
+      !doc.is_expired &&
+      doc.days_until_expiry >= 0 &&
+      doc.days_until_expiry <= 7;
+    const isExpired = doc.is_expired || doc.days_until_expiry < 0;
+
+    return (
+      <tr
+        className="hover-actions-trigger btn-reveal-trigger position-static"
+        style={{ cursor: "pointer" }}
+        onClick={() => onSelect(doc)}
+      >
+        {/* Document */}
+        <td className="align-middle ps-3">
+          <div className="d-flex align-items-center gap-3">
+            <div
+              className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
+              style={{
+                width: 36,
+                height: 36,
+                background: `${fmt.color}18`,
+              }}
+            >
+              <span
+                className={`fas ${fmt.icon}`}
+                style={{ color: fmt.color, fontSize: 15 }}
+              />
+            </div>
+            <div className="min-w-0">
+              <p
+                className="mb-0 fw-semibold text-body-highlight text-truncate"
+                style={{ maxWidth: 160 }}
+              >
+                {doc.title}
+              </p>
+              <p className="mb-0 fs-10 text-body-tertiary">
+                {doc.document_type_name}
+              </p>
+            </div>
+          </div>
+        </td>
+
+        {/* Expédition */}
+        <td className="align-middle">
+          <NavLink
+            className="fw-semibold text-primary fs-9"
+            to={`/expeditions/${doc.shipment}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="fas fa-folder me-1 opacity-50" />
+            {t("documents.viewFolder")}
+          </NavLink>
+          {doc.reference_number && (
+            <p className="mb-0 fs-10 text-body-tertiary">
+              {doc.reference_number}
+            </p>
+          )}
+        </td>
+
+        {/* Statut */}
+        <td className="align-middle">
+          <span
+            className={`badge badge-phoenix badge-phoenix-${val.badge}`}
+          >
+            <span className={`fas ${val.icon} me-1`} />
+            {val.label}
+          </span>
+        </td>
+
+        {/* Émission */}
+        <td className="align-middle white-space-nowrap">
+          <span className="fs-9 text-body-tertiary">
+            {fmtDate(doc.issue_date)}
+          </span>
+        </td>
+
+        {/* Expiration */}
+        <td className="align-middle white-space-nowrap">
+          {doc.expiry_date ? (
+            <div>
+              <span
+                className={`fs-9 fw-semibold ${expiryClass(doc.days_until_expiry, isExpired)}`}
+              >
+                {isExpired && (
+                  <span className="fas fa-triangle-exclamation me-1" />
+                )}
+                {expiring && (
+                  <span className="fas fa-clock me-1" />
+                )}
+                {fmtDate(doc.expiry_date)}
+              </span>
+              {!isExpired && doc.days_until_expiry >= 0 && (
+                <p
+                  className={`mb-0 fs-10 ${expiryClass(doc.days_until_expiry, false)}`}
+                >
+                  {t("documents.daysLeft", {
+                    count: doc.days_until_expiry,
+                  })}
+                </p>
+              )}
+              {isExpired && (
+                <p className="mb-0 fs-10 text-danger">
+                  {t("documents.statusExpired")}
+                </p>
+              )}
+            </div>
+          ) : (
+            <span className="text-body-quaternary fs-9">—</span>
+          )}
+        </td>
+
+        {/* Uploadé par */}
+        <td className="align-middle">
+          <p className="mb-0 fs-9 fw-semibold">
+            {doc.uploaded_by_name ?? "—"}
+          </p>
+          <p className="mb-0 fs-10 text-body-tertiary">
+            {fmtDate(doc.uploaded_at)}
+          </p>
+        </td>
+
+        {/* Taille */}
+        <td className="align-middle">
+          <span className="fs-9 text-body-tertiary">
+            {fmtSize(doc.file_size_bytes)}
+          </span>
+        </td>
+
+        {/* Actions */}
+        <td className="align-middle pe-3" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="btn btn-sm dropdown-toggle dropdown-caret-none btn-reveal"
+            type="button"
+            data-bs-toggle="dropdown"
+          >
+            <span className="fas fa-ellipsis-h" />
+          </button>
+          <div className="dropdown-menu dropdown-menu-end py-2">
+            <button className="dropdown-item" onClick={() => onSelect(doc)}>
+              <span className="fas fa-eye me-2 text-body-tertiary" />
+              {t("documents.viewDetails")}
+            </button>
+            {doc.file && (
+              <a
+                className="dropdown-item"
+                href={doc.file}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <span className="fas fa-download me-2 text-body-tertiary" />
+                {t("documents.download")}
+              </a>
+            )}
+            {doc.validation_status === "pending" && (
+              <button
+                className="dropdown-item"
+                onClick={() => onValidate(doc)}
+              >
+                <span className="fas fa-shield-check me-2 text-success" />
+                {t("documents.validateReject")}
+              </button>
+            )}
+            <NavLink
+              className="dropdown-item"
+              to={`/expeditions/${doc.shipment}`}
+            >
+              <span className="fas fa-folder-open me-2 text-body-tertiary" />
+              {t("documents.openShipment")}
+            </NavLink>
+          </div>
+        </td>
+      </tr>
+    );
+  },
+);
+
 export default function DocumentsPage() {
   const { t } = useTranslation();
-  const VALIDATION_CONFIG = getValidationConfig(t);
+  const VALIDATION_CONFIG = useMemo(() => getValidationConfig(t), [t]);
   const [searchParams] = useSearchParams();
   const [state, dispatch] = useReducer(reducer, {
     ...init,
@@ -461,7 +723,7 @@ export default function DocumentsPage() {
 
   const [documents, setDocuments] = useState([]);
   const [docTypes, setDocTypes] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [detail, setDetail] = useState(null); // doc sélectionné
   const [validating, setValidating] = useState(null); // doc à valider
@@ -476,7 +738,6 @@ export default function DocumentsPage() {
   // ── Chargement des documents ────────────────────────────
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     setError(null);
 
     const params = {};
@@ -486,6 +747,8 @@ export default function DocumentsPage() {
     if (shipment) params.shipment = shipment;
 
     const run = () => {
+      if (cancelled) return;
+      setLoading(true);
       axiosClient
         .get("/documents/", { params })
         .then(({ data }) => {
@@ -500,12 +763,12 @@ export default function DocumentsPage() {
         });
     };
 
-    const t = search ? setTimeout(run, 350) : (run(), undefined);
+    const timer = search ? setTimeout(run, 350) : run();
     return () => {
       cancelled = true;
-      clearTimeout(t);
+      clearTimeout(timer);
     };
-  }, [search, status, doc_type, shipment]);
+  }, [search, status, doc_type, shipment, t]);
 
   // ── KPIs ────────────────────────────────────────────────
   const kpis = useMemo(
@@ -541,6 +804,11 @@ export default function DocumentsPage() {
   const totalPages = Math.max(1, Math.ceil(documents.length / PAGE_SIZE));
   const pagedDocs = documents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const hasFilters = search || status || doc_type || shipment;
+
+  // Garde-fou : ramener la page courante si elle dépasse le nombre de pages
+  useEffect(() => {
+    if (page > totalPages) dispatch({ type: "PAGE", page: totalPages });
+  }, [page, totalPages]);
 
   const pageNums = useMemo(() => {
     const nums = [],
@@ -807,21 +1075,8 @@ export default function DocumentsPage() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                      <tr key={i}>
-                        {Array.from({ length: 7 }).map((_, j) => (
-                          <td key={j} className="py-3">
-                            <div
-                              className="bg-body-secondary rounded placeholder-wave"
-                              style={{
-                                height: 13,
-                                width: [180, 120, 90, 80, 90, 120, 50][j],
-                                opacity: 0.4,
-                              }}
-                            />
-                          </td>
-                        ))}
-                      </tr>
+                    Array.from({ length: 8 }).map((_, i) => (
+                      <SkeletonRow key={i} />
                     ))
                   ) : pagedDocs.length === 0 ? (
                     <tr>
@@ -836,193 +1091,16 @@ export default function DocumentsPage() {
                       </td>
                     </tr>
                   ) : (
-                    pagedDocs.map((d) => {
-                      const fmt =
-                        FORMAT_CONFIG[d.file_format] ?? FORMAT_CONFIG.other;
-                      const val =
-                        VALIDATION_CONFIG[d.validation_status] ??
-                        VALIDATION_CONFIG.pending;
-                      const expiring =
-                        !d.is_expired &&
-                        d.days_until_expiry >= 0 &&
-                        d.days_until_expiry <= 7;
-                      const isExpired = d.is_expired || d.days_until_expiry < 0;
-
-                      return (
-                        <tr
-                          key={d.id}
-                          className="hover-actions-trigger btn-reveal-trigger position-static"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => setDetail(d)}
-                        >
-                          {/* Document */}
-                          <td className="align-middle ps-3">
-                            <div className="d-flex align-items-center gap-3">
-                              <div
-                                className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
-                                style={{
-                                  width: 36,
-                                  height: 36,
-                                  background: `${fmt.color}18`,
-                                }}
-                              >
-                                <span
-                                  className={`fas ${fmt.icon}`}
-                                  style={{ color: fmt.color, fontSize: 15 }}
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <p
-                                  className="mb-0 fw-semibold text-body-highlight text-truncate"
-                                  style={{ maxWidth: 160 }}
-                                >
-                                  {d.title}
-                                </p>
-                                <p className="mb-0 fs-10 text-body-tertiary">
-                                  {d.document_type_name}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Expédition */}
-                          <td className="align-middle">
-                            <NavLink
-                              className="fw-semibold text-primary fs-9"
-                              to={`/expeditions/${d.shipment}`}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <span className="fas fa-folder me-1 opacity-50" />
-                              {t("documents.viewFolder")}
-                            </NavLink>
-                            {d.reference_number && (
-                              <p className="mb-0 fs-10 text-body-tertiary">
-                                {d.reference_number}
-                              </p>
-                            )}
-                          </td>
-
-                          {/* Statut */}
-                          <td className="align-middle">
-                            <span
-                              className={`badge badge-phoenix badge-phoenix-${val.badge}`}
-                            >
-                              <span className={`fas ${val.icon} me-1`} />
-                              {val.label}
-                            </span>
-                          </td>
-
-                          {/* Émission */}
-                          <td className="align-middle white-space-nowrap">
-                            <span className="fs-9 text-body-tertiary">
-                              {fmtDate(d.issue_date)}
-                            </span>
-                          </td>
-
-                          {/* Expiration */}
-                          <td className="align-middle white-space-nowrap">
-                            {d.expiry_date ? (
-                              <div>
-                                <span
-                                  className={`fs-9 fw-semibold ${expiryClass(d.days_until_expiry, isExpired)}`}
-                                >
-                                  {isExpired && (
-                                    <span className="fas fa-triangle-exclamation me-1" />
-                                  )}
-                                  {expiring && (
-                                    <span className="fas fa-clock me-1" />
-                                  )}
-                                  {fmtDate(d.expiry_date)}
-                                </span>
-                                {!isExpired && d.days_until_expiry >= 0 && (
-                                  <p
-                                    className={`mb-0 fs-10 ${expiryClass(d.days_until_expiry, false)}`}
-                                  >
-                                    {t("documents.daysLeft", { count: d.days_until_expiry })}
-                                  </p>
-                                )}
-                                {isExpired && (
-                                  <p className="mb-0 fs-10 text-danger">
-                                    {t("documents.statusExpired")}
-                                  </p>
-                                )}
-                              </div>
-                            ) : (
-                              <span className="text-body-quaternary fs-9">
-                                —
-                              </span>
-                            )}
-                          </td>
-
-                          {/* Uploadé par */}
-                          <td className="align-middle">
-                            <p className="mb-0 fs-9 fw-semibold">
-                              {d.uploaded_by_name ?? "—"}
-                            </p>
-                            <p className="mb-0 fs-10 text-body-tertiary">
-                              {fmtDate(d.uploaded_at)}
-                            </p>
-                          </td>
-
-                          {/* Taille */}
-                          <td className="align-middle">
-                            <span className="fs-9 text-body-tertiary">
-                              {fmtSize(d.file_size_bytes)}
-                            </span>
-                          </td>
-
-                          {/* Actions */}
-                          <td
-                            className="align-middle pe-3"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              className="btn btn-sm dropdown-toggle dropdown-caret-none btn-reveal"
-                              type="button"
-                              data-bs-toggle="dropdown"
-                            >
-                              <span className="fas fa-ellipsis-h" />
-                            </button>
-                            <div className="dropdown-menu dropdown-menu-end py-2">
-                              <button
-                                className="dropdown-item"
-                                onClick={() => setDetail(d)}
-                              >
-                                <span className="fas fa-eye me-2 text-body-tertiary" />
-                                {t("documents.viewDetails")}
-                              </button>
-                              {d.file && (
-                                <a
-                                  className="dropdown-item"
-                                  href={d.file}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  <span className="fas fa-download me-2 text-body-tertiary" />
-                                  {t("documents.download")}
-                                </a>
-                              )}
-                              {d.validation_status === "pending" && (
-                                <button
-                                  className="dropdown-item"
-                                  onClick={() => setValidating(d)}
-                                >
-                                  <span className="fas fa-shield-check me-2 text-success" />
-                                  {t("documents.validateReject")}
-                                </button>
-                              )}
-                              <NavLink
-                                className="dropdown-item"
-                                to={`/expeditions/${d.shipment}`}
-                              >
-                                <span className="fas fa-folder-open me-2 text-body-tertiary" />
-                                {t("documents.openShipment")}
-                              </NavLink>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
+                    pagedDocs.map((d) => (
+                      <DocumentRow
+                        key={d.id}
+                        doc={d}
+                        t={t}
+                        VALIDATION_CONFIG={VALIDATION_CONFIG}
+                        onSelect={setDetail}
+                        onValidate={setValidating}
+                      />
+                    ))
                   )}
                 </tbody>
               </table>
@@ -1033,11 +1111,14 @@ export default function DocumentsPage() {
           {!loading && documents.length > PAGE_SIZE && (
             <div className="card-footer d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
               <p className="mb-0 fs-9 text-body-tertiary">
-                {t("documents.displayRange", {
-                  from: (page - 1) * PAGE_SIZE + 1,
-                  to: Math.min(page * PAGE_SIZE, documents.length),
-                  total: documents.length,
-                })}
+                <Trans
+                  i18nKey="documents.displayRange"
+                  values={{
+                    from: (page - 1) * PAGE_SIZE + 1,
+                    to: Math.min(page * PAGE_SIZE, documents.length),
+                    total: documents.length,
+                  }}
+                />
               </p>
               <div className="d-flex align-items-center gap-1">
                 <button

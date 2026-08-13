@@ -2,16 +2,10 @@ import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import { useTranslation } from "react-i18next";
 import { MAPBOX_CONFIG } from "./constants.js";
-import {
-  useMapboxInit,
-  useMapContent,
-  useMapPopup,
-} from "./mapHooks.jsx";
+import { useMapboxInit, useMapContent, useMapPopup } from "./mapHooks.jsx";
 import MapControls from "./MapControls.jsx";
 
 mapboxgl.accessToken = MAPBOX_CONFIG.accessToken;
-
-// ─── COMPOSANT ──────────────────────────────────────────────
 
 const TradeFlowMap = ({
   shipments = [],

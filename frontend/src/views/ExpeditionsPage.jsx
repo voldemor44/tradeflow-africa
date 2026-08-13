@@ -52,7 +52,7 @@ const fmt = (val) =>
 
 const fmtDate = (iso) => {
   if (!iso) return "—";
-  const [y, m, d] = iso.split("-");
+  const [y, m, d] = String(iso).split("T")[0].split("-");
   const mo = [
     "Jan",
     "Fév",
@@ -221,13 +221,16 @@ const SortTh = ({ col, label, ordering, onSort, className = "" }) => (
 
 const SkeletonRow = () => (
   <tr>
-    {Array.from({ length: 10 }).map((_, i) => (
-      <td key={i} className="py-3">
+    {Array.from({ length: 11 }).map((_, i) => (
+      <td
+        key={i}
+        className={`py-3${i === 0 ? " ps-3" : ""}${i === 9 ? " text-end pe-3" : ""}${i === 10 ? " pe-3" : ""}`}
+      >
         <div
-          className="bg-body-secondary rounded placeholder-wave"
+          className={`bg-body-secondary rounded placeholder-wave${i === 9 ? " ms-auto" : ""}`}
           style={{
             height: 13,
-            width: [30, 110, 170, 150, 130, 65, 55, 90, 80, 110][i],
+            width: [16, 110, 170, 150, 130, 60, 55, 90, 80, 90, 28][i],
             opacity: 0.45,
           }}
         />
@@ -260,8 +263,9 @@ export default function ExpeditionsPage() {
 
   const [shipments, setShipments] = useState([]);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   // ── Fetch déclenché par TOUS les paramètres ─────────────
   useEffect(() => {
@@ -285,6 +289,7 @@ export default function ExpeditionsPage() {
           if (!cancelled) {
             setShipments(data.results);
             setTotal(data.count);
+            setHasLoaded(true);
           }
         })
         .catch((err) => {
@@ -371,7 +376,7 @@ export default function ExpeditionsPage() {
           <div>
             <h2 className="mb-1">{t("expeditions.title")}</h2>
             <p className="text-body-tertiary mb-0 fs-9">
-              {loading ? (
+              {loading && !hasLoaded ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" />
                   {t("expeditions.loading")}
@@ -379,6 +384,9 @@ export default function ExpeditionsPage() {
               ) : (
                 <>
                   {total} dossier{total !== 1 ? "s" : ""}
+                  {loading && hasLoaded && (
+                    <span className="spinner-border spinner-border-sm ms-2 text-primary" />
+                  )}
                 </>
               )}
               {hasFilters && (
@@ -590,7 +598,18 @@ export default function ExpeditionsPage() {
         )}
 
         {/* TABLEAU */}
-        <div className="card">
+        <div className="card position-relative">
+          {loading && hasLoaded && (
+            <div
+              className="progress position-absolute top-0 start-0 end-0 rounded-0"
+              style={{ height: 2, zIndex: 1 }}
+            >
+              <div
+                className="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                style={{ width: "100%" }}
+              />
+            </div>
+          )}
           <div className="card-body p-0">
             <div className="table-responsive scrollbar">
               <table className="table table-hover fs-9 mb-0 border-top border-translucent">
@@ -602,7 +621,7 @@ export default function ExpeditionsPage() {
                           className="form-check-input"
                           type="checkbox"
                           checked={allSelected}
-                          disabled={loading}
+                          disabled={loading && !hasLoaded}
                           onChange={() =>
                             dispatch({
                               type: "TOGGLE_ALL",
@@ -673,7 +692,7 @@ export default function ExpeditionsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {loading ? (
+                  {loading && !hasLoaded ? (
                     Array.from({ length: 6 }).map((_, i) => (
                       <SkeletonRow key={i} />
                     ))
@@ -794,12 +813,20 @@ export default function ExpeditionsPage() {
                           </span>
                         </td>
                         <td className="align-middle text-end pe-3 white-space-nowrap">
-                          <span className="fs-9 fw-semibold">
-                            {fmt(s.declared_value)}
-                          </span>
-                          <span className="fs-10 text-body-tertiary ms-1">
-                            {s.currency}
-                          </span>
+                          {s.declared_value != null ? (
+                            <>
+                              <span className="fs-9 fw-semibold">
+                                {fmt(s.declared_value)}
+                              </span>
+                              {s.currency && (
+                                <span className="fs-10 text-body-tertiary ms-1">
+                                  {s.currency}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-body-quaternary">—</span>
+                          )}
                         </td>
                         <td className="align-middle pe-3">
                           <button
@@ -863,7 +890,7 @@ export default function ExpeditionsPage() {
           </div>
 
           {/* PAGINATION */}
-          {!loading && total > PAGE_SIZE && (
+          {total > PAGE_SIZE && (
             <div className="card-footer d-flex align-items-center justify-content-between py-3 flex-wrap gap-2">
               <p className="mb-0 fs-9 text-body-tertiary">
                 {t("expeditions.displayRange", {

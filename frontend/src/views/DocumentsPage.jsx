@@ -253,7 +253,10 @@ const DetailPanel = ({ doc, onValidate, onClose }) => {
   const val =
     VALIDATION_CONFIG[doc.validation_status] ?? VALIDATION_CONFIG.pending;
   const expiring =
-    !doc.is_expired && doc.days_until_expiry <= 7 && doc.days_until_expiry >= 0;
+    doc.days_until_expiry != null &&
+    !doc.is_expired &&
+    doc.days_until_expiry >= 0 &&
+    doc.days_until_expiry <= 7;
 
   return (
     <div
@@ -781,9 +784,9 @@ export default function DocumentsPage() {
       expiring:
         documents.filter(
           (d) =>
-            !d.is_expired &&
-            d.days_until_expiry <= 7 &&
-            d.days_until_expiry >= 0,
+            d.days_until_expiry != null &&
+            d.days_until_expiry >= 0 &&
+            d.days_until_expiry <= 7,
         ).length + documents.filter((d) => d.is_expired).length,
     }),
     [documents],
@@ -795,7 +798,9 @@ export default function DocumentsPage() {
       documents.filter(
         (d) =>
           d.is_expired ||
-          (d.days_until_expiry >= 0 && d.days_until_expiry <= 7),
+          (d.days_until_expiry != null &&
+            d.days_until_expiry >= 0 &&
+            d.days_until_expiry <= 7),
       ),
     [documents],
   );
@@ -904,7 +909,7 @@ export default function DocumentsPage() {
         {/* ALERTE EXPIRATION */}
         {expiringDocs.length > 0 && (
           <div className="alert alert-danger border border-danger-subtle d-flex align-items-start gap-3 mb-4 py-3">
-            <span className="fas fa-triangle-exclamation text-danger fs-6 flex-shrink-0 mt-1" />
+            <span className="fas fa-triangle-exclamation text-white fs-6 flex-shrink-0 mt-1" />
             <div className="flex-grow-1 min-w-0">
               <p className="mb-1 fw-semibold fs-9">
                 {expiringDocs.length}{" "}
@@ -930,11 +935,13 @@ export default function DocumentsPage() {
                     {d.document_type_name}
                     {d.is_expired
                       ? ` · ${t("documents.statusExpired")}`
-                      : ` · ${d.days_until_expiry}j`}
+                      : d.days_until_expiry != null
+                        ? ` · ${d.days_until_expiry}j`
+                        : ""}
                   </button>
                 ))}
                 {expiringDocs.length > 5 && (
-                  <span className="fs-10 text-danger align-self-center">
+                  <span className="fs-9 fw-semibold text-white align-self-center flex-shrink-0">
                     +{expiringDocs.length - 5} {t("documents.others")}
                   </span>
                 )}

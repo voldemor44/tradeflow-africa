@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import mapboxgl from "mapbox-gl";
 import { MAPBOX_CONFIG, MAP_CSS } from "./constants.js";
 import { getCachedStyle } from "./styleCache.js";
-import { createMarkerEl } from "./markers.js";
+import { createMarkerEl } from "./Marker.jsx";
 import { getPortCoords, interpolateLine } from "./ports.js";
 import { MODE_COLORS, BLOCKED_STATUS, BLOCKED_COLOR } from "./constants.js";
 import ShipmentPopup from "./ShipmentPopup.jsx";

@@ -11,12 +11,30 @@ import { getPortCoords, interpolateLine } from "./ports.js";
 import { MODE_COLORS, BLOCKED_STATUS, BLOCKED_COLOR } from "./constants.js";
 import ShipmentPopup from "./ShipmentPopup.jsx";
 
+// Résout l'URL du style correspondant au thème demandé. Sources de
+// vérité, par ordre de fiabilité : la valeur de l'événement, le
+// thème réellement appliqué (data-bs-theme), puis la config Phoenix.
+const getThemeStyleUrl = (value) => {
+  if (MAPBOX_CONFIG.styles[value]) return MAPBOX_CONFIG.styles[value];
+  const applied = document.documentElement?.getAttribute("data-bs-theme");
+  if (applied && MAPBOX_CONFIG.styles[applied]) {
+    return MAPBOX_CONFIG.styles[applied];
+  }
+  const cfg = window.config?.config?.phoenixTheme;
+  if (cfg && MAPBOX_CONFIG.styles[cfg]) return MAPBOX_CONFIG.styles[cfg];
+  return MAPBOX_CONFIG.styles.light;
+};
+
 // ── Initialisation de la carte ────────────────────────────────
 // Style mis en cache pour éviter de le re-télécharger à chaque
 // navigation ou changement de thème.
 
 export const useMapboxInit = ({ containerRef, mapRef, popupRef, markersRef }) => {
   const [mapReady, setMapReady] = useState(false);
+  // Style actuellement appliqué à la carte : évite les setStyle
+  // redondants (double clic, événements multiples) qui rechargent
+  // le style et font disparaître le contenu.
+  const appliedStyleUrlRef = useRef(null);
 
   useEffect(() => {
     if (!mapboxgl || !containerRef.current) return;
@@ -35,14 +53,34 @@ export const useMapboxInit = ({ containerRef, mapRef, popupRef, markersRef }) =>
 
     let cancelled = false;
 
-    const onThemeChange = ({ detail: { control } }) => {
+    // Applique un style (objet issu du cache, ou URL en repli). Ne
+    // déclenche rien si le style est déjà celui de la carte.
+    const applyStyle = (url) => {
+      const map = mapRef.current;
+      if (!map || appliedStyleUrlRef.current === url) return;
+
+      getCachedStyle(url)
+        .then((style) => {
+          if (cancelled || mapRef.current !== map) return;
+          appliedStyleUrlRef.current = url;
+          try {
+            map.setStyle(style);
+          } catch {
+            // Style corrompu dans le cache → repli sur l'URL brute.
+            map.setStyle(url);
+          }
+        })
+        .catch(() => {
+          if (cancelled || mapRef.current !== map) return;
+          // Cache froid ou erreur réseau → comportement d'origine.
+          appliedStyleUrlRef.current = url;
+          map.setStyle(url);
+        });
+    };
+
+    const onThemeChange = ({ detail: { control, value } }) => {
       if (control !== "phoenixTheme") return;
-      const nextTheme = window.config.config.phoenixTheme;
-      const nextUrl =
-        MAPBOX_CONFIG.styles[nextTheme] ?? MAPBOX_CONFIG.styles.light;
-      getCachedStyle(nextUrl)
-        .then((style) => mapRef.current?.setStyle(style))
-        .catch(() => mapRef.current?.setStyle(nextUrl));
+      applyStyle(getThemeStyleUrl(value));
     };
 
     const initMap = (style) => {
@@ -61,6 +99,8 @@ export const useMapboxInit = ({ containerRef, mapRef, popupRef, markersRef }) =>
         closeOnClick: false,
         maxWidth: "260px",
       });
+
+      appliedStyleUrlRef.current = initialStyleUrl;
 
       document.body.addEventListener("clickControl", onThemeChange);
       setMapReady(true);
@@ -150,10 +190,7 @@ export const useMapContent = ({
     const map = mapRef.current;
     if (!map) return;
 
-    let cancelled = false;
-
     const addContent = () => {
-      if (cancelled) return;
       Object.values(markersRef.current).forEach(({ marker }) =>
         marker.remove(),
       );
@@ -231,15 +268,21 @@ export const useMapContent = ({
       });
     };
 
+    // style.load se déclenche au chargement initial du style ET à
+    // chaque setStyle (changement de thème) : on ré-ajoute alors le
+    // contenu, car Mapbox détruit les layers/sources en changeant de
+    // style. addContent est idempotent (suppression puis ajout).
+    const onStyleLoad = () => addContent();
+    map.on("style.load", onStyleLoad);
+
+    // Style déjà chargé (re-rendu suite à un changement de props) :
+    // addContent immédiat, style.load ne se reproduira pas.
     if (map.isStyleLoaded()) {
       addContent();
-    } else {
-      // Évite un double addContent si les props changent pendant le chargement
-      map.once("load", addContent);
-      return () => {
-        cancelled = true;
-        map.off("load", addContent);
-      };
     }
+
+    return () => {
+      map.off("style.load", onStyleLoad);
+    };
   }, [shipments, selectedId, mapReady, mapRef, markersRef, onSelectRef, showPopup]);
 };

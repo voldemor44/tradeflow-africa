@@ -279,6 +279,12 @@ export const useMapContent = ({
     // addContent immédiat, style.load ne se reproduira pas.
     if (map.isStyleLoaded()) {
       addContent();
+    } else {
+      // "style.load" peut s'être déclenché avant l'attachement du
+      // listener (style issu du cache → résolu très vite) alors que
+      // isStyleLoaded() est encore faux : on s'appuie sur l'événement
+      // "load" comme filet de sécurité pour ajouter le contenu.
+      map.once("load", addContent);
     }
 
     return () => {

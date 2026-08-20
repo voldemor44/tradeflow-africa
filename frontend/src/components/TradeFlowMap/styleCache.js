@@ -55,7 +55,11 @@ const writeToStorage = (url, style) => {
 
 const toStyleHttpUrl = (url) => {
   if (!url.startsWith("mapbox://")) return url;
-  const [, type, username, styleId] = url.split("/");
+  // "mapbox://styles/user/id" → ["mapbox:", "", "styles", "user", "id"]
+  const parts = url.split("/");
+  const type = parts[2];
+  const username = parts[3];
+  const styleId = parts[4];
   if (type !== "styles" || !username || !styleId) return url;
   return `https://api.mapbox.com/styles/v1/${username}/${styleId}`;
 };
